@@ -1,5 +1,3 @@
-
-[БЛОК 1: ОСНОВНОЙ ИСХОДНЫЙ КОД (RaycastService.luau)]
 -- ═══════════════════════════════════════════════════════════════════════════════
 --  CHETSU HUB v7.0 — ULTIMATE EDITION
 --  Dark Effect UI + PIN Screen + FX Engine + Hard Aimbot, AutoWall & 2D Vector ESP
@@ -3019,7 +3017,6 @@ print([[
     ╚═══════════════════════════════════════════════════════════════════╝
 ]])
 
-[БЛОК 2: ASSET MANAGER & UI LOADER]
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  ASSET MANAGER (GITHUB CACHING & SAFE LOADER)
