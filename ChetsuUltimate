@@ -29,7 +29,7 @@ workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
     Camera = workspace.CurrentCamera
 end)
 -- ─────────────────────────────────────────────────────────────────────────────
---  2. GLOBAL STATE TABLE (_G.ChetsuState)
+--  2. GLOBAL STATE TABLE
 -- ─────────────────────────────────────────────────────────────────────────────
 _G.ChetsuState = {
     -- Pin & Auth
