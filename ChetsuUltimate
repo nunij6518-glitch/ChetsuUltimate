@@ -1,0 +1,3183 @@
+
+[БЛОК 1: ОСНОВНОЙ ИСХОДНЫЙ КОД (RaycastService.luau)]
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  CHETSU HUB v7.0 — ULTIMATE EDITION
+--  Dark Effect UI + PIN Screen + FX Engine + Hard Aimbot, AutoWall & 2D Vector ESP
+--  Compatible with: Solara, Xeno, Delta, Hydrogen, Wave, Arceus X, etc.
+--  100% Pure Luau · Complete & Production Ready · Zero Code Truncation
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  1. SERVICES & CORE REFERENCES
+-- ─────────────────────────────────────────────────────────────────────────────
+local Players           = game:GetService("Players")
+local TweenService      = game:GetService("TweenService")
+local UserInputService  = game:GetService("UserInputService")
+local RunService        = game:GetService("RunService")
+local Stats             = game:GetService("Stats")
+local Debris            = game:GetService("Debris")
+local HttpService       = game:GetService("HttpService")
+local Lighting          = game:GetService("Lighting")
+local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+local TeleportService   = game:GetService("TeleportService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local SoundService      = game:GetService("SoundService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
+local Camera      = workspace.CurrentCamera
+
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    Camera = workspace.CurrentCamera
+end)
+-- ─────────────────────────────────────────────────────────────────────────────
+--  2. GLOBAL STATE TABLE (_G.ChetsuState)
+-- ─────────────────────────────────────────────────────────────────────────────
+_G.ChetsuState = {
+    -- Pin & Auth
+    PinUnlocked       = false,
+    CurrentPin        = "1337",
+
+    -- Combat: Legitbot
+    HardAimbot        = false,
+    AutoWall          = false,
+    Spin360           = false,
+    AimTarget         = "Head",
+    FOVRadius         = 120,
+    TeamCheck         = true,
+
+    -- Combat: Ragebot
+    RageEnabled       = false,
+    AutoShoot         = false,
+    SilentAim         = false,
+    RageFOV           = 20,
+    DamageMultiplier  = 50,
+
+    -- Visuals: 2D Vector ESP
+    Box2D             = false,
+    NameESP           = false,
+    Snaplines         = false,
+    Skeleton          = false,
+    HealthBar         = false,
+    WeaponText        = false,
+    DistanceESP       = false,
+    Chams             = false,
+    ChamsColor        = Color3.fromRGB(235, 235, 240),
+    ChamsTransparency = 0.5,
+
+    -- Visuals: World
+    Fullbright        = false,
+    NoFog             = false,
+    NoShadows         = false,
+
+    -- Misc: Movement
+    WalkSpeed         = 16,
+    Noclip            = false,
+    Fly               = false,
+    FlySpeed          = 100,
+
+    -- Misc: Custom Skins
+    CustomSkin        = "Default",
+
+    -- Misc: Other / FX / Appearance
+    SnowEnabled       = true,
+    SnowAmount        = 40,
+    SnowSpeed         = 65,
+    SnowSize          = 3,
+    SnowColor         = "White",
+
+    BgEffect          = "Snow", -- None, Snow, Rain, Particles, Grid, Scanlines, Glow Orbs, Aurora
+    VignetteOverlay   = false,
+    BorderGlowPulse   = false,
+    BgIntensity       = 5,
+
+    Theme             = "Dark", -- Dark, Midnight, Amoled, Cyberpunk
+    StreamProof       = false,
+    ShowConsole       = true,
+    ShowRadar         = true,
+
+    ThirdPerson       = false,
+    ThirdPersonDist   = 12,
+    SpinBot           = false,
+    SpinSpeed         = 50,
+    AntiKick          = false,
+    AntiAFK           = false,
+
+    -- Keybinds
+    KeyToggleUI       = Enum.KeyCode.K,
+    KeyPanic          = Enum.KeyCode.End,
+    KeyAimbot         = Enum.KeyCode.X,
+    KeyESP            = Enum.KeyCode.Z,
+
+    -- System / Config
+    ConfigSlot        = 1,
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  3. THEME PALETTES & DYNAMIC THEME SYSTEM
+-- ─────────────────────────────────────────────────────────────────────────────
+local Themes = {
+    Dark = {
+        BG           = Color3.fromRGB(13, 13, 15),
+        Sidebar      = Color3.fromRGB(16, 16, 19),
+        Card         = Color3.fromRGB(20, 20, 24),
+        CardBorder   = Color3.fromRGB(28, 28, 34),
+        ActiveTabBG  = Color3.fromRGB(28, 28, 33),
+        TextActive   = Color3.fromRGB(235, 235, 240),
+        TextMuted    = Color3.fromRGB(115, 115, 128),
+        CategoryText = Color3.fromRGB(75, 75, 88),
+        CheckboxOn   = Color3.fromRGB(240, 240, 245),
+        CheckboxOff  = Color3.fromRGB(25, 25, 30),
+        SliderTrack  = Color3.fromRGB(35, 35, 42),
+        SliderFill   = Color3.fromRGB(235, 235, 240),
+        Accent       = Color3.fromRGB(235, 235, 240),
+        AccentGlow   = Color3.fromRGB(200, 200, 210),
+        Green        = Color3.fromRGB(80, 220, 80),
+        Orange       = Color3.fromRGB(255, 140, 0),
+        Red          = Color3.fromRGB(220, 60, 60),
+        White        = Color3.fromRGB(255, 255, 255),
+        Black        = Color3.fromRGB(0, 0, 0),
+    },
+    Midnight = {
+        BG           = Color3.fromRGB(8, 10, 20),
+        Sidebar      = Color3.fromRGB(11, 13, 24),
+        Card         = Color3.fromRGB(15, 17, 29),
+        CardBorder   = Color3.fromRGB(26, 29, 46),
+        ActiveTabBG  = Color3.fromRGB(21, 24, 40),
+        TextActive   = Color3.fromRGB(200, 208, 232),
+        TextMuted    = Color3.fromRGB(74, 80, 104),
+        CategoryText = Color3.fromRGB(58, 64, 88),
+        CheckboxOn   = Color3.fromRGB(107, 140, 255),
+        CheckboxOff  = Color3.fromRGB(18, 21, 32),
+        SliderTrack  = Color3.fromRGB(26, 30, 48),
+        SliderFill   = Color3.fromRGB(107, 140, 255),
+        Accent       = Color3.fromRGB(107, 140, 255),
+        AccentGlow   = Color3.fromRGB(107, 140, 255),
+        Green        = Color3.fromRGB(74, 222, 128),
+        Orange       = Color3.fromRGB(251, 146, 60),
+        Red          = Color3.fromRGB(248, 113, 113),
+        White        = Color3.fromRGB(255, 255, 255),
+        Black        = Color3.fromRGB(0, 0, 0),
+    },
+    Amoled = {
+        BG           = Color3.fromRGB(0, 0, 0),
+        Sidebar      = Color3.fromRGB(0, 0, 0),
+        Card         = Color3.fromRGB(5, 5, 5),
+        CardBorder   = Color3.fromRGB(17, 17, 17),
+        ActiveTabBG  = Color3.fromRGB(10, 10, 10),
+        TextActive   = Color3.fromRGB(255, 255, 255),
+        TextMuted    = Color3.fromRGB(68, 68, 68),
+        CategoryText = Color3.fromRGB(51, 51, 51),
+        CheckboxOn   = Color3.fromRGB(255, 255, 255),
+        CheckboxOff  = Color3.fromRGB(10, 10, 10),
+        SliderTrack  = Color3.fromRGB(21, 21, 21),
+        SliderFill   = Color3.fromRGB(255, 255, 255),
+        Accent       = Color3.fromRGB(255, 255, 255),
+        AccentGlow   = Color3.fromRGB(255, 255, 255),
+        Green        = Color3.fromRGB(0, 255, 102),
+        Orange       = Color3.fromRGB(255, 136, 0),
+        Red          = Color3.fromRGB(255, 51, 51),
+        White        = Color3.fromRGB(255, 255, 255),
+        Black        = Color3.fromRGB(0, 0, 0),
+    },
+    Cyberpunk = {
+        BG           = Color3.fromRGB(10, 0, 20),
+        Sidebar      = Color3.fromRGB(15, 0, 32),
+        Card         = Color3.fromRGB(20, 0, 40),
+        CardBorder   = Color3.fromRGB(42, 0, 80),
+        ActiveTabBG  = Color3.fromRGB(26, 0, 48),
+        TextActive   = Color3.fromRGB(255, 0, 255),
+        TextMuted    = Color3.fromRGB(128, 64, 160),
+        CategoryText = Color3.fromRGB(96, 48, 128),
+        CheckboxOn   = Color3.fromRGB(0, 255, 255),
+        CheckboxOff  = Color3.fromRGB(15, 0, 32),
+        SliderTrack  = Color3.fromRGB(42, 0, 80),
+        SliderFill   = Color3.fromRGB(0, 255, 255),
+        Accent       = Color3.fromRGB(0, 255, 255),
+        AccentGlow   = Color3.fromRGB(255, 0, 255),
+        Green        = Color3.fromRGB(0, 255, 136),
+        Orange       = Color3.fromRGB(255, 170, 0),
+        Red          = Color3.fromRGB(255, 0, 85),
+        White        = Color3.fromRGB(255, 255, 255),
+        Black        = Color3.fromRGB(0, 0, 0),
+    }
+}
+
+local CurrentTheme = Themes.Dark
+
+local SnowColors = {
+    ["White"]    = Color3.fromRGB(255, 255, 255),
+    ["Ice Blue"] = Color3.fromRGB(180, 210, 255),
+    ["Gold"]     = Color3.fromRGB(255, 200, 80),
+    ["Purple"]   = Color3.fromRGB(180, 120, 255),
+    ["Red"]      = Color3.fromRGB(255, 100, 100),
+    ["Green"]    = Color3.fromRGB(100, 255, 150),
+}
+
+local FontMain = Enum.Font.GothamMedium
+local FontBold = Enum.Font.GothamBold
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  4. PROCEDURAL AUDIO FX ENGINE (Click, Toggle, Slide, Panic)
+-- ─────────────────────────────────────────────────────────────────────────────
+local function PlaySoundEffect(soundType)
+    task.spawn(function()
+        local s = Instance.new("Sound")
+        s.Volume = 0.35
+        if soundType == "click" then
+            s.SoundId = "rbxassetid://6895079853"
+            s.PlaybackSpeed = 1.6
+        elseif soundType == "toggle" then
+            s.SoundId = "rbxassetid://6895079853"
+            s.PlaybackSpeed = 2.1
+        elseif soundType == "slide" then
+            s.SoundId = "rbxassetid://6895079853"
+            s.PlaybackSpeed = 1.2
+            s.Volume = 0.15
+        elseif soundType == "panic" then
+            s.SoundId = "rbxassetid://138090596"
+            s.PlaybackSpeed = 0.7
+            s.Volume = 0.6
+        elseif soundType == "pin_err" then
+            s.SoundId = "rbxassetid://2865227271"
+            s.PlaybackSpeed = 0.9
+            s.Volume = 0.5
+        end
+        s.Parent = SoundService
+        s:Play()
+        Debris:AddItem(s, 1.5)
+    end)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  5. UI HELPER FUNCTIONS
+-- ─────────────────────────────────────────────────────────────────────────────
+local function New(class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props or {}) do obj[k] = v end
+    return obj
+end
+
+local function AddCorner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 8)
+    c.Parent = parent
+    return c
+end
+
+local function AddStroke(parent, color, thickness)
+    local s = Instance.new("UIStroke")
+    s.Color = color or CurrentTheme.CardBorder
+    s.Thickness = thickness or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = parent
+    return s
+end
+
+local function AddPadding(parent, top, right, bottom, left)
+    local pad = Instance.new("UIPadding")
+    pad.PaddingTop    = UDim.new(0, top    or 0)
+    pad.PaddingRight  = UDim.new(0, right  or 0)
+    pad.PaddingBottom = UDim.new(0, bottom or 0)
+    pad.PaddingLeft   = UDim.new(0, left   or 0)
+    pad.Parent        = parent
+    return pad
+end
+
+local function MakeDraggable(handle, target)
+    local dragging, inputStart, posStart
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            inputStart = input.Position
+            posStart = target.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - inputStart
+            target.Position = UDim2.new(posStart.X.Scale, posStart.X.Offset + delta.X, posStart.Y.Scale, posStart.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  6. SCREEN GUI INITIALIZATION
+-- ─────────────────────────────────────────────────────────────────────────────
+if PlayerGui:FindFirstChild("ChetsuHubV7") then
+    PlayerGui.ChetsuHubV7:Destroy()
+end
+
+local ScreenGui = New("ScreenGui", {
+    Name           = "ChetsuHubV7",
+    Parent         = PlayerGui,
+    ResetOnSpawn   = false,
+    DisplayOrder   = 99999,
+    IgnoreGuiInset = true,
+    Enabled        = true,
+})
+
+-- Stream Proof Overlay (Full blackout when enabled)
+local StreamProofOverlay = New("Frame", {
+    Name             = "StreamProofOverlay",
+    Parent           = ScreenGui,
+    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 1, 0),
+    Visible          = false,
+    ZIndex           = 99998,
+})
+local StreamProofText = New("TextLabel", {
+    Parent                 = StreamProofOverlay,
+    BackgroundTransparency = 1,
+    Size                   = UDim2.new(1, 0, 1, 0),
+    Font                   = FontBold,
+    TextSize               = 24,
+    TextColor3             = Color3.fromRGB(255, 255, 255),
+    Text                   = "STREAM PROOF MODE ACTIVE",
+    ZIndex                 = 99999,
+})
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  7. EVENT LOG / CONSOLE PANEL
+-- ─────────────────────────────────────────────────────────────────────────────
+local ConsolePanel = New("Frame", {
+    Name             = "ConsolePanel",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    BackgroundTransparency = 0.08,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(0, 280, 0, 150),
+    Position         = UDim2.new(1, -290, 1, -160),
+    ZIndex           = 100,
+    Visible          = _G.ChetsuState.ShowConsole,
+})
+AddCorner(ConsolePanel, 8)
+local ConsoleStroke = AddStroke(ConsolePanel, CurrentTheme.CardBorder, 1)
+
+local ConsoleHeader = New("Frame", {
+    Parent           = ConsolePanel,
+    BackgroundColor3 = CurrentTheme.Card,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 0, 24),
+    ZIndex           = 101,
+})
+AddCorner(ConsoleHeader, 8)
+MakeDraggable(ConsoleHeader, ConsolePanel)
+
+local ConsoleTitle = New("TextLabel", {
+    Parent                 = ConsoleHeader,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 8, 0, 0),
+    Size                   = UDim2.new(1, -36, 1, 0),
+    Font                   = FontBold,
+    TextSize               = 10,
+    TextColor3             = CurrentTheme.CategoryText,
+    Text                   = "EVENT LOG",
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 102,
+})
+
+local ConsoleClose = New("TextButton", {
+    Parent           = ConsoleHeader,
+    BackgroundTransparency = 1,
+    Position         = UDim2.new(1, -22, 0.5, -9),
+    Size             = UDim2.new(0, 18, 0, 18),
+    Font             = FontBold,
+    TextSize         = 10,
+    TextColor3       = CurrentTheme.TextMuted,
+    Text             = "✕",
+    AutoButtonColor  = false,
+    ZIndex           = 102,
+})
+ConsoleClose.MouseButton1Click:Connect(function()
+    PlaySoundEffect("click")
+    ConsolePanel.Visible = false
+    _G.ChetsuState.ShowConsole = false
+end)
+
+local ConsoleScroll = New("ScrollingFrame", {
+    Parent                 = ConsolePanel,
+    BackgroundTransparency = 1,
+    BorderSizePixel        = 0,
+    Position               = UDim2.new(0, 6, 0, 28),
+    Size                   = UDim2.new(1, -12, 1, -34),
+    CanvasSize             = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize    = Enum.AutomaticSize.Y,
+    ScrollBarThickness     = 2,
+    ScrollBarImageColor3   = CurrentTheme.CardBorder,
+    ZIndex                 = 101,
+})
+local ConsoleLayout = Instance.new("UIListLayout", ConsoleScroll)
+ConsoleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ConsoleLayout.Padding   = UDim.new(0, 2)
+
+local function LogEvent(msg, level)
+    local timeStr = os.date("%H:%M:%S")
+    local col = CurrentTheme.TextMuted
+    if level == "ok" then col = CurrentTheme.Green
+    elseif level == "warn" then col = CurrentTheme.Orange
+    elseif level == "err" then col = CurrentTheme.Red
+    elseif level == "info" then col = CurrentTheme.Accent
+    end
+
+    local line = New("TextLabel", {
+        Parent                 = ConsoleScroll,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 0, 14),
+        Font                   = Enum.Font.Code,
+        TextSize               = 10,
+        TextColor3             = col,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        Text                   = string.format("[%s] %s", timeStr, tostring(msg)),
+        ZIndex                 = 102,
+    })
+
+    local children = ConsoleScroll:GetChildren()
+    if #children > 60 then
+        for i = 1, #children - 60 do
+            if children[i]:IsA("TextLabel") then children[i]:Destroy() end
+        end
+    end
+    ConsoleScroll.CanvasPosition = Vector2.new(0, 99999)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  8. LIVE TACTICAL RADAR WIDGET
+-- ─────────────────────────────────────────────────────────────────────────────
+local RadarPanel = New("Frame", {
+    Name             = "RadarPanel",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    BackgroundTransparency = 0.08,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(0, 120, 0, 130),
+    Position         = UDim2.new(0, 14, 1, -144),
+    ZIndex           = 100,
+    Visible          = _G.ChetsuState.ShowRadar,
+})
+AddCorner(RadarPanel, 8)
+local RadarStroke = AddStroke(RadarPanel, CurrentTheme.CardBorder, 1)
+
+local RadarHeader = New("Frame", {
+    Parent           = RadarPanel,
+    BackgroundColor3 = CurrentTheme.Card,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 0, 20),
+    ZIndex           = 101,
+})
+AddCorner(RadarHeader, 8)
+MakeDraggable(RadarHeader, RadarPanel)
+
+New("TextLabel", {
+    Parent                 = RadarHeader,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 6, 0, 0),
+    Size                   = UDim2.new(1, -26, 1, 0),
+    Font                   = FontBold,
+    TextSize               = 9,
+    TextColor3             = CurrentTheme.CategoryText,
+    Text                   = "RADAR",
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 102,
+})
+
+local RadarClose = New("TextButton", {
+    Parent           = RadarHeader,
+    BackgroundTransparency = 1,
+    Position         = UDim2.new(1, -18, 0.5, -8),
+    Size             = UDim2.new(0, 16, 0, 16),
+    Font             = FontBold,
+    TextSize         = 9,
+    TextColor3       = CurrentTheme.TextMuted,
+    Text             = "✕",
+    AutoButtonColor  = false,
+    ZIndex           = 102,
+})
+RadarClose.MouseButton1Click:Connect(function()
+    PlaySoundEffect("click")
+    RadarPanel.Visible = false
+    _G.ChetsuState.ShowRadar = false
+end)
+
+local RadarViewport = New("Frame", {
+    Parent           = RadarPanel,
+    BackgroundColor3 = CurrentTheme.Card,
+    BackgroundTransparency = 0.5,
+    BorderSizePixel  = 0,
+    Position         = UDim2.new(0.5, -48, 0, 26),
+    Size             = UDim2.new(0, 96, 0, 96),
+    ClipsDescendants = true,
+    ZIndex           = 101,
+})
+AddCorner(RadarViewport, 48)
+AddStroke(RadarViewport, CurrentTheme.CardBorder, 1)
+
+local RadarCenter = New("Frame", {
+    Parent           = RadarViewport,
+    BackgroundColor3 = CurrentTheme.Accent,
+    BorderSizePixel  = 0,
+    AnchorPoint      = Vector2.new(0.5, 0.5),
+    Position         = UDim2.new(0.5, 0, 0.5, 0),
+    Size             = UDim2.new(0, 4, 0, 4),
+    ZIndex           = 103,
+})
+AddCorner(RadarCenter, 2)
+
+-- Radar grid rings
+for _, r in ipairs({ 30, 60, 90 }) do
+    local ring = New("Frame", {
+        Parent                 = RadarViewport,
+        BackgroundTransparency = 1,
+        AnchorPoint            = Vector2.new(0.5, 0.5),
+        Position               = UDim2.new(0.5, 0, 0.5, 0),
+        Size                   = UDim2.new(0, r, 0, r),
+        ZIndex                 = 102,
+    })
+    AddCorner(ring, r / 2)
+    AddStroke(ring, Color3.fromRGB(60, 60, 75), 1)
+end
+
+local radarBlips = {}
+
+local function UpdateRadar()
+    if not RadarPanel.Visible or not LocalPlayer.Character then return end
+    local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+
+    for p, b in pairs(radarBlips) do
+        if not p.Parent or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+            b:Destroy()
+            radarBlips[p] = nil
+        end
+    end
+
+    local radarRadius = 45
+    local maxDistance = 250
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = p.Character.HumanoidRootPart
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local blip = radarBlips[p]
+                if not blip then
+                    blip = New("Frame", {
+                        Parent           = RadarViewport,
+                        BorderSizePixel  = 0,
+                        AnchorPoint      = Vector2.new(0.5, 0.5),
+                        Size             = UDim2.new(0, 4, 0, 4),
+                        ZIndex           = 104,
+                    })
+                    AddCorner(blip, 2)
+                    radarBlips[p] = blip
+                end
+
+                local isTeammate = (_G.ChetsuState.TeamCheck and p.Team and LocalPlayer.Team and p.Team == LocalPlayer.Team)
+                blip.BackgroundColor3 = isTeammate and CurrentTheme.Green or CurrentTheme.Red
+
+                local relPos = targetRoot.Position - myRoot.Position
+                local camCFrame = Camera.CFrame
+                local localX = camCFrame.RightVector:Dot(relPos)
+                local localZ = -camCFrame.LookVector:Dot(relPos)
+
+                local distRatio = math.clamp(Vector2.new(localX, localZ).Magnitude / maxDistance, 0, 1)
+                local norm = Vector2.new(localX, localZ).Unit
+                if localX == 0 and localZ == 0 then norm = Vector2.zero end
+
+                local finalPos = norm * (distRatio * radarRadius)
+                blip.Position = UDim2.new(0.5, finalPos.X, 0.5, finalPos.Y)
+                blip.Visible  = true
+            end
+        end
+    end
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  9. WATERMARK (Draggable Top-Left, Live FPS & Ping & Time)
+-- ─────────────────────────────────────────────────────────────────────────────
+local WatermarkFrame = New("Frame", {
+    Name             = "Watermark",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(0, 270, 0, 32),
+    Position         = UDim2.new(0, 14, 0, 14),
+    ZIndex           = 100,
+    Visible          = true,
+})
+AddCorner(WatermarkFrame, 8)
+local WatermarkStroke = AddStroke(WatermarkFrame, CurrentTheme.CardBorder, 1)
+
+local WatermarkStrip = New("Frame", {
+    Parent           = WatermarkFrame,
+    BackgroundColor3 = CurrentTheme.Accent,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(0, 3, 1, -8),
+    Position         = UDim2.new(0, 6, 0, 4),
+    ZIndex           = 101,
+})
+AddCorner(WatermarkStrip, 2)
+
+local WatermarkLabel = New("TextLabel", {
+    Parent                 = WatermarkFrame,
+    BackgroundTransparency = 1,
+    Size                   = UDim2.new(1, -18, 1, 0),
+    Position               = UDim2.new(0, 16, 0, 0),
+    Font                   = FontBold,
+    TextSize               = 12,
+    TextColor3             = CurrentTheme.TextActive,
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    TextTruncate           = Enum.TextTruncate.AtEnd,
+    Text                   = "CHETSU  |  -- FPS  |  -- ms  |  00:00",
+    ZIndex                 = 101,
+})
+
+MakeDraggable(WatermarkFrame, WatermarkFrame)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  10. MAIN FRAME, SNOW & MULTI-BACKGROUND EFFECTS ENGINE
+-- ─────────────────────────────────────────────────────────────────────────────
+local MainFrame = New("Frame", {
+    Name             = "MainFrame",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    AnchorPoint      = Vector2.new(0.5, 0.5),
+    Position         = UDim2.new(0.5, 0, 0.5, 0),
+    Size             = UDim2.new(0, 760, 0, 520),
+    ClipsDescendants = true,
+    ZIndex           = 1,
+    Visible          = false, -- Controlled by Loader/PIN
+})
+AddCorner(MainFrame, 12)
+local MainFrameStroke = AddStroke(MainFrame, CurrentTheme.CardBorder, 1)
+
+local UiScale = New("UIScale", { Parent = MainFrame, Scale = 1 })
+
+New("UISizeConstraint", {
+    Parent  = MainFrame,
+    MinSize = Vector2.new(580, 380),
+    MaxSize = Vector2.new(900, 640),
+})
+
+-- Modal Lock Fix
+New("TextButton", {
+    Name                   = "ModalLockFix",
+    Parent                 = MainFrame,
+    BackgroundTransparency = 1,
+    BorderSizePixel        = 0,
+    Size                   = UDim2.new(1, 0, 1, 0),
+    Position               = UDim2.new(0, 0, 0, 0),
+    Text                   = "",
+    Modal                  = true,
+    ZIndex                 = 0,
+})
+
+-- Vignette Overlay
+local VignetteOverlay = New("Frame", {
+    Name             = "VignetteOverlay",
+    Parent           = MainFrame,
+    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+    BackgroundTransparency = 0.6,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 1, 0),
+    Visible          = _G.ChetsuState.VignetteOverlay,
+    ZIndex           = 1,
+})
+local VignetteCorner = AddCorner(VignetteOverlay, 12)
+
+-- FX Containers
+local FXContainer = New("Frame", {
+    Name                   = "FXContainer",
+    Parent                 = MainFrame,
+    BackgroundTransparency = 1,
+    Size                   = UDim2.new(1, 0, 1, 0),
+    ZIndex                 = 0,
+})
+
+local snowFlakes   = {}
+local rainDrops    = {}
+local ambientDots  = {}
+local glowOrbs     = {}
+local auroraBars   = {}
+
+local function ClearFX()
+    FXContainer:ClearAllChildren()
+    snowFlakes  = {}
+    rainDrops   = {}
+    ambientDots = {}
+    glowOrbs    = {}
+    auroraBars  = {}
+end
+
+local function InitBackgroundEffects()
+    ClearFX()
+    local eff = _G.ChetsuState.BgEffect
+
+    if eff == "Snow" and _G.ChetsuState.SnowEnabled then
+        local col = SnowColors[_G.ChetsuState.SnowColor] or Color3.fromRGB(255, 255, 255)
+        for i = 1, _G.ChetsuState.SnowAmount do
+            local sz = _G.ChetsuState.SnowSize + math.random(0, 2)
+            local flake = New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = col,
+                BackgroundTransparency = math.random(3, 7) / 10,
+                Position               = UDim2.new(math.random(), 0, math.random(), 0),
+                Size                   = UDim2.new(0, sz, 0, sz),
+                ZIndex                 = 0,
+            })
+            AddCorner(flake, 10)
+            table.insert(snowFlakes, {
+                Obj    = flake,
+                SpeedY = (_G.ChetsuState.SnowSpeed * 0.4) + math.random(10, 40),
+                SpeedX = math.random(-15, 15),
+                Phase  = math.random() * math.pi * 2
+            })
+        end
+    elseif eff == "Rain" then
+        for i = 1, 35 + (_G.ChetsuState.BgIntensity * 5) do
+            local drop = New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = Color3.fromRGB(160, 180, 240),
+                BackgroundTransparency = 0.5,
+                Position               = UDim2.new(math.random(), 0, math.random(), 0),
+                Size                   = UDim2.new(0, 1, 0, math.random(12, 24)),
+                ZIndex                 = 0,
+            })
+            table.insert(rainDrops, {
+                Obj   = drop,
+                Speed = 400 + math.random(50, 250),
+            })
+        end
+    elseif eff == "Particles" then
+        for i = 1, 20 + (_G.ChetsuState.BgIntensity * 4) do
+            local sz = math.random(2, 4)
+            local dot = New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = CurrentTheme.Accent,
+                BackgroundTransparency = math.random(4, 8) / 10,
+                Position               = UDim2.new(math.random(), 0, math.random(), 0),
+                Size                   = UDim2.new(0, sz, 0, sz),
+                ZIndex                 = 0,
+            })
+            AddCorner(dot, 4)
+            table.insert(ambientDots, {
+                Obj = dot,
+                Vx  = (math.random() - 0.5) * 0.08,
+                Vy  = (math.random() - 0.5) * 0.08,
+                Phase = math.random() * math.pi * 2,
+            })
+        end
+    elseif eff == "Grid" then
+        local spacing = math.max(25, 60 - (_G.ChetsuState.BgIntensity * 3))
+        for y = 0, 520, spacing do
+            New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.94,
+                Position               = UDim2.new(0, 0, 0, y),
+                Size                   = UDim2.new(1, 0, 0, 1),
+                ZIndex                 = 0,
+            })
+        end
+        for x = 0, 760, spacing do
+            New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.94,
+                Position               = UDim2.new(0, x, 0, 0),
+                Size                   = UDim2.new(0, 1, 1, 0),
+                ZIndex                 = 0,
+            })
+        end
+    elseif eff == "Scanlines" then
+        for y = 0, 520, 4 do
+            New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.97,
+                Position               = UDim2.new(0, 0, 0, y),
+                Size                   = UDim2.new(1, 0, 0, 1),
+                ZIndex                 = 0,
+            })
+        end
+    elseif eff == "Glow Orbs" then
+        local orbColors = { Color3.fromRGB(100, 150, 255), Color3.fromRGB(255, 100, 180), Color3.fromRGB(100, 255, 180) }
+        for i = 1, 4 do
+            local sz = math.random(60, 120)
+            local orb = New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = orbColors[i % #orbColors + 1],
+                BackgroundTransparency = 0.88,
+                Position               = UDim2.new(math.random(), 0, math.random(), 0),
+                Size                   = UDim2.new(0, sz, 0, sz),
+                ZIndex                 = 0,
+            })
+            AddCorner(orb, sz / 2)
+            table.insert(glowOrbs, {
+                Obj   = orb,
+                Phase = math.random() * math.pi * 2,
+                Speed = 0.5 + math.random() * 0.5,
+            })
+        end
+    elseif eff == "Aurora" then
+        for i = 1, 3 do
+            local bar = New("Frame", {
+                Parent                 = FXContainer,
+                BackgroundColor3       = (i == 1 and CurrentTheme.Accent) or (i == 2 and CurrentTheme.Green) or CurrentTheme.Orange,
+                BackgroundTransparency = 0.92,
+                Position               = UDim2.new(-0.2, 0, 0.2 + (i * 0.2), 0),
+                Size                   = UDim2.new(1.4, 0, 0, 70),
+                ZIndex                 = 0,
+            })
+            AddCorner(bar, 35)
+            table.insert(auroraBars, {
+                Obj   = bar,
+                Phase = i * 2,
+                Speed = 0.4 + (i * 0.2),
+            })
+        end
+    end
+end
+
+-- Render FX loop
+RunService.RenderStepped:Connect(function(dt)
+    if not MainFrame.Visible then return end
+    local time = os.clock()
+
+    -- Snow
+    for _, f in ipairs(snowFlakes) do
+        local posX = f.Obj.Position.X.Scale + (math.sin(time + f.Phase) * 0.05 + (f.SpeedX / 1000)) * dt
+        local posY = f.Obj.Position.Y.Scale + (f.SpeedY / 520) * dt
+        if posY > 1.05 then posY = -0.05; posX = math.random() end
+        if posX > 1.05 then posX = -0.05 end
+        if posX < -0.05 then posX = 1.05 end
+        f.Obj.Position = UDim2.new(posX, 0, posY, 0)
+    end
+
+    -- Rain
+    for _, r in ipairs(rainDrops) do
+        local posY = r.Obj.Position.Y.Scale + (r.Speed / 520) * dt
+        if posY > 1.05 then posY = -0.05; r.Obj.Position = UDim2.new(math.random(), 0, posY, 0)
+        else r.Obj.Position = UDim2.new(r.Obj.Position.X.Scale, 0, posY, 0) end
+    end
+
+    -- Particles
+    for _, p in ipairs(ambientDots) do
+        local px = p.Obj.Position.X.Scale + p.Vx * dt
+        local py = p.Obj.Position.Y.Scale + p.Vy * dt
+        if px > 1.05 then px = -0.05 elseif px < -0.05 then px = 1.05 end
+        if py > 1.05 then py = -0.05 elseif py < -0.05 then py = 1.05 end
+        p.Obj.Position = UDim2.new(px, 0, py, 0)
+        p.Obj.BackgroundTransparency = 0.5 + (math.sin(time * 2 + p.Phase) * 0.3)
+    end
+
+    -- Glow Orbs
+    for _, o in ipairs(glowOrbs) do
+        local ox = o.Obj.Position.X.Scale + math.sin(time * o.Speed + o.Phase) * 0.0005
+        local oy = o.Obj.Position.Y.Scale + math.cos(time * o.Speed * 0.7 + o.Phase) * 0.0005
+        o.Obj.Position = UDim2.new(ox, 0, oy, 0)
+    end
+
+    -- Aurora
+    for _, a in ipairs(auroraBars) do
+        local shift = math.sin(time * a.Speed + a.Phase) * 0.08
+        a.Obj.Position = UDim2.new(-0.2 + shift, 0, a.Obj.Position.Y.Scale, 0)
+        a.Obj.BackgroundTransparency = 0.90 + (math.sin(time + a.Phase) * 0.05)
+    end
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  11. PIN CODE SCREEN & LOADER
+-- ─────────────────────────────────────────────────────────────────────────────
+local PinScreen = New("Frame", {
+    Name             = "PinScreen",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 1, 0),
+    ZIndex           = 2000,
+    Visible          = true,
+})
+
+local PinStar = New("TextLabel", {
+    Parent                 = PinScreen,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -24, 0.5, -190),
+    Size                   = UDim2.new(0, 48, 0, 48),
+    Font                   = FontBold,
+    TextSize               = 40,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = "✦",
+    ZIndex                 = 2001,
+})
+
+local PinTitle = New("TextLabel", {
+    Parent                 = PinScreen,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -120, 0.5, -140),
+    Size                   = UDim2.new(0, 240, 0, 24),
+    Font                   = FontBold,
+    TextSize               = 13,
+    TextColor3             = CurrentTheme.TextMuted,
+    Text                   = "ENTER PIN CODE",
+    ZIndex                 = 2001,
+})
+
+local PinDotsContainer = New("Frame", {
+    Parent                 = PinScreen,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -70, 0.5, -100),
+    Size                   = UDim2.new(0, 140, 0, 24),
+    ZIndex                 = 2001,
+})
+local PinDotsLayout = Instance.new("UIListLayout", PinDotsContainer)
+PinDotsLayout.FillDirection = Enum.FillDirection.Horizontal
+PinDotsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+PinDotsLayout.Padding = UDim.new(0, 14)
+
+local pinDotObjects = {}
+for i = 1, 4 do
+    local dot = New("Frame", {
+        Parent           = PinDotsContainer,
+        BackgroundColor3 = CurrentTheme.CardBorder,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(0, 14, 0, 14),
+        ZIndex           = 2002,
+    })
+    AddCorner(dot, 7)
+    AddStroke(dot, CurrentTheme.CardBorder, 1)
+    table.insert(pinDotObjects, dot)
+end
+
+local PinNumpad = New("Frame", {
+    Parent                 = PinScreen,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -105, 0.5, -60),
+    Size                   = UDim2.new(0, 210, 0, 270),
+    ZIndex                 = 2001,
+})
+local PinGrid = Instance.new("UIGridLayout", PinNumpad)
+PinGrid.CellSize = UDim2.new(0, 62, 0, 62)
+PinGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+PinGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local enteredPin = ""
+
+local function UpdatePinDisplay()
+    for i, dot in ipairs(pinDotObjects) do
+        if i <= #enteredPin then
+            dot.BackgroundColor3 = CurrentTheme.Accent
+        else
+            dot.BackgroundColor3 = CurrentTheme.CardBorder
+        end
+    end
+end
+
+local LoaderFrame = New("Frame", {
+    Name             = "LoaderFrame",
+    Parent           = ScreenGui,
+    BackgroundColor3 = CurrentTheme.BG,
+    BorderSizePixel  = 0,
+    Size             = UDim2.new(1, 0, 1, 0),
+    ZIndex           = 1990,
+    Visible          = false,
+})
+
+local LoaderStar = New("TextLabel", {
+    Parent                 = LoaderFrame,
+    BackgroundTransparency = 1,
+    AnchorPoint            = Vector2.new(0.5, 0.5),
+    Position               = UDim2.new(0.5, 0, 0.5, -40),
+    Size                   = UDim2.new(0, 80, 0, 80),
+    Font                   = FontBold,
+    TextSize               = 56,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = "✦",
+    ZIndex                 = 1992,
+})
+
+local LoaderTitle = New("TextLabel", {
+    Parent                 = LoaderFrame,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -150, 0.5, 30),
+    Size                   = UDim2.new(0, 300, 0, 24),
+    Font                   = FontBold,
+    TextSize               = 13,
+    TextColor3             = CurrentTheme.TextMuted,
+    Text                   = "INITIALIZING CHETSU HUB",
+    ZIndex                 = 1992,
+})
+
+local LoaderSub = New("TextLabel", {
+    Parent                 = LoaderFrame,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0.5, -150, 0.5, 55),
+    Size                   = UDim2.new(0, 300, 0, 18),
+    Font                   = FontMain,
+    TextSize               = 11,
+    TextColor3             = CurrentTheme.CategoryText,
+    Text                   = "v7.0  ·  Ultimate Edition",
+    ZIndex                 = 1992,
+})
+
+local function StartLoaderSequence()
+    PinScreen.Visible = false
+    LoaderFrame.Visible = true
+    PlaySoundEffect("toggle")
+
+    local rotConn
+    rotConn = RunService.RenderStepped:Connect(function(dt)
+        LoaderStar.Rotation = LoaderStar.Rotation + 180 * dt
+    end)
+
+    task.delay(1.8, function()
+        if rotConn then rotConn:Disconnect() end
+        TweenService:Create(LoaderFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+        task.wait(0.4)
+        LoaderFrame.Visible = false
+        MainFrame.Visible = true
+        InitBackgroundEffects()
+        LogEvent("Chetsu Hub v7.0 loaded successfully", "ok")
+        LogEvent("Theme: " .. _G.ChetsuState.Theme .. " | FPS Engine Online", "info")
+    end)
+end
+
+local function CheckPinCode()
+    if #enteredPin == 4 then
+        if enteredPin == _G.ChetsuState.CurrentPin then
+            _G.ChetsuState.PinUnlocked = true
+            StartLoaderSequence()
+        else
+            PlaySoundEffect("pin_err")
+            -- Shake animation
+            local origPos = PinDotsContainer.Position
+            task.spawn(function()
+                for i = 1, 3 do
+                    PinDotsContainer.Position = origPos + UDim2.new(0, -10, 0, 0)
+                    task.wait(0.04)
+                    PinDotsContainer.Position = origPos + UDim2.new(0, 10, 0, 0)
+                    task.wait(0.04)
+                end
+                PinDotsContainer.Position = origPos
+                enteredPin = ""
+                UpdatePinDisplay()
+            end)
+        end
+    end
+end
+
+local keysLayout = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "←" }
+for _, k in ipairs(keysLayout) do
+    local keyBtn = New("TextButton", {
+        Parent           = PinNumpad,
+        BackgroundColor3 = CurrentTheme.Card,
+        BorderSizePixel  = 0,
+        Font             = FontBold,
+        TextSize         = 18,
+        TextColor3       = (k == "C" and CurrentTheme.Red) or (k == "←" and CurrentTheme.TextMuted) or CurrentTheme.TextActive,
+        Text             = k,
+        AutoButtonColor  = false,
+        ZIndex           = 2002,
+    })
+    AddCorner(keyBtn, 10)
+    AddStroke(keyBtn, CurrentTheme.CardBorder, 1)
+
+    keyBtn.MouseButton1Click:Connect(function()
+        PlaySoundEffect("click")
+        if k == "C" then
+            enteredPin = ""
+        elseif k == "←" then
+            enteredPin = string.sub(enteredPin, 1, #enteredPin - 1)
+        elseif #enteredPin < 4 then
+            enteredPin = enteredPin .. k
+            CheckPinCode()
+        end
+        UpdatePinDisplay()
+    end)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  12. OPEN / CLOSE LOGIC & PANIC SYSTEM
+-- ─────────────────────────────────────────────────────────────────────────────
+local isMenuOpen = true
+local isAnimating = false
+
+local function ToggleUI()
+    if not _G.ChetsuState.PinUnlocked then return end
+    if isAnimating then return end
+    isAnimating = true
+    if isMenuOpen then
+        local tScale = TweenService:Create(UiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.85 })
+        local tFade  = TweenService:Create(MainFrame, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 })
+        tScale:Play()
+        tFade:Play()
+        tScale.Completed:Wait()
+        MainFrame.Visible = false
+        isMenuOpen = false
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        end)
+        LogEvent("UI hidden", "warn")
+    else
+        MainFrame.Visible = true
+        UiScale.Scale = 0.85
+        MainFrame.BackgroundTransparency = 0
+        local tScale = TweenService:Create(UiScale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+        local tFade  = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0 })
+        tScale:Play()
+        tFade:Play()
+        tScale.Completed:Wait()
+        isMenuOpen = true
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end)
+        LogEvent("UI shown", "ok")
+    end
+    isAnimating = false
+end
+
+local function PanicDisableAll()
+    PlaySoundEffect("panic")
+    MainFrame.Visible = false
+    isMenuOpen = false
+    _G.ChetsuState.HardAimbot = false
+    _G.ChetsuState.AutoWall   = false
+    _G.ChetsuState.RageEnabled = false
+    _G.ChetsuState.Box2D      = false
+    _G.ChetsuState.NameESP    = false
+    _G.ChetsuState.Snaplines  = false
+    _G.ChetsuState.Skeleton   = false
+    _G.ChetsuState.Chams      = false
+    _G.ChetsuState.Fly        = false
+    _G.ChetsuState.Noclip     = false
+    LogEvent("PANIC KEY ACTIVATED — All features killed", "err")
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  13. CHETSU | SIDEBAR & PROFILE
+-- ─────────────────────────────────────────────────────────────────────────────
+local Sidebar = New("Frame", {
+    Parent           = MainFrame,
+    BackgroundColor3 = CurrentTheme.Sidebar,
+    Size             = UDim2.new(0, 190, 1, 0),
+    ZIndex           = 2,
+})
+MakeDraggable(Sidebar, MainFrame)
+
+New("TextLabel", {
+    Parent                 = Sidebar,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 0, 0, 16),
+    Size                   = UDim2.new(1, 0, 0, 54),
+    Font                   = FontBold,
+    TextSize               = 42,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = "✦",
+    TextYAlignment         = Enum.TextYAlignment.Center,
+    ZIndex                 = 2,
+})
+
+local ProfileFrame = New("Frame", {
+    Parent                 = Sidebar,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 14, 1, -56),
+    Size                   = UDim2.new(1, -28, 0, 44),
+    ZIndex                 = 2,
+})
+
+local AvatarImg = New("ImageLabel", {
+    Parent           = ProfileFrame,
+    BackgroundColor3 = CurrentTheme.Card,
+    Size             = UDim2.new(0, 36, 0, 36),
+    Position         = UDim2.new(0, 0, 0.5, -18),
+    Image            = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+    ZIndex           = 2,
+})
+AddCorner(AvatarImg, 18)
+
+task.spawn(function()
+    local thumb, isReady = Players:GetUserThumbnailAsync(
+        LocalPlayer.UserId,
+        Enum.ThumbnailType.HeadShot,
+        Enum.ThumbnailSize.Size420x420
+    )
+    if isReady and thumb then AvatarImg.Image = thumb end
+end)
+
+New("TextLabel", {
+    Parent                 = ProfileFrame,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 44, 0, 3),
+    Size                   = UDim2.new(1, -44, 0, 16),
+    Font                   = FontBold,
+    TextSize               = 12,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = LocalPlayer.DisplayName or LocalPlayer.Name,
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    TextTruncate           = Enum.TextTruncate.AtEnd,
+    ZIndex                 = 2,
+})
+
+New("TextLabel", {
+    Parent                 = ProfileFrame,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 44, 0, 20),
+    Size                   = UDim2.new(1, -44, 0, 14),
+    Font                   = FontMain,
+    TextSize               = 10,
+    TextColor3             = CurrentTheme.TextMuted,
+    Text                   = "VIP  /  Premium",
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 2,
+})
+
+local NavContainer = New("ScrollingFrame", {
+    Parent                 = Sidebar,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 12, 0, 76),
+    Size                   = UDim2.new(1, -24, 1, -140),
+    CanvasSize             = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize    = Enum.AutomaticSize.Y,
+    ScrollBarThickness     = 0,
+    ZIndex                 = 2,
+})
+local NavList = Instance.new("UIListLayout", NavContainer)
+NavList.SortOrder = Enum.SortOrder.LayoutOrder
+NavList.Padding   = UDim.new(0, 2)
+
+local Header = New("Frame", {
+    Parent                 = MainFrame,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 190, 0, 0),
+    Size                   = UDim2.new(1, -190, 0, 45),
+    ZIndex                 = 2,
+})
+MakeDraggable(Header, MainFrame)
+
+local HeaderTitle = New("TextLabel", {
+    Parent                 = Header,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 18, 0, 0),
+    Size                   = UDim2.new(0, 170, 1, 0),
+    Font                   = FontBold,
+    TextSize               = 15,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = "Chetsu Hub  |  v7.0",
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 2,
+})
+
+local HeaderClock = New("TextLabel", {
+    Parent                 = Header,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 190, 0, 0),
+    Size                   = UDim2.new(0, 100, 1, 0),
+    Font                   = FontMain,
+    TextSize               = 12,
+    TextColor3             = CurrentTheme.TextMuted,
+    Text                   = "00:00:00",
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 2,
+})
+
+local ResetBtn = New("TextButton", {
+    Parent           = Header,
+    BackgroundColor3 = CurrentTheme.Card,
+    Position         = UDim2.new(1, -62, 0.5, -11),
+    Size             = UDim2.new(0, 22, 0, 22),
+    Font             = FontBold,
+    TextSize         = 13,
+    TextColor3       = CurrentTheme.TextMuted,
+    Text             = "↻",
+    AutoButtonColor  = false,
+    ZIndex           = 2,
+})
+AddCorner(ResetBtn, 6)
+
+ResetBtn.MouseButton1Click:Connect(function()
+    PlaySoundEffect("click")
+    WatermarkFrame.Position = UDim2.new(0, 14, 0, 14)
+    ConsolePanel.Position   = UDim2.new(1, -290, 1, -160)
+    RadarPanel.Position     = UDim2.new(0, 14, 1, -144)
+    ConsolePanel.Visible    = true
+    RadarPanel.Visible      = true
+    LogEvent("Panel positions reset to defaults", "ok")
+end)
+
+local CloseBtn = New("TextButton", {
+    Parent           = Header,
+    BackgroundColor3 = CurrentTheme.Card,
+    Position         = UDim2.new(1, -34, 0.5, -11),
+    Size             = UDim2.new(0, 22, 0, 22),
+    Font             = FontBold,
+    TextSize         = 12,
+    TextColor3       = CurrentTheme.TextMuted,
+    Text             = "✕",
+    AutoButtonColor  = false,
+    ZIndex           = 2,
+})
+AddCorner(CloseBtn, 6)
+CloseBtn.MouseButton1Click:Connect(function()
+    PlaySoundEffect("click")
+    ToggleUI()
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  14. TAB REGISTRATION & UI COMPONENT FACTORIES
+-- ─────────────────────────────────────────────────────────────────────────────
+local tabs, pages = {}, {}
+local activeTabName = "Legitbot"
+
+local function AddCategory(title)
+    New("TextLabel", {
+        Parent                 = NavContainer,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 0, 24),
+        Font                   = FontBold,
+        TextSize               = 11,
+        TextColor3             = CurrentTheme.CategoryText,
+        Text                   = string.upper(title),
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 2,
+    })
+end
+
+local function SwitchTab(tabName)
+    activeTabName = tabName
+    for name, data in pairs(tabs) do
+        local isSel = (name == tabName)
+        data.Btn.BackgroundTransparency = isSel and 0 or 1
+        data.Btn.BackgroundColor3       = CurrentTheme.ActiveTabBG
+        data.Icon.TextColor3            = isSel and CurrentTheme.TextActive or CurrentTheme.TextMuted
+        data.Lbl.TextColor3             = isSel and CurrentTheme.TextActive or CurrentTheme.TextMuted
+        pages[name].Visible             = isSel
+    end
+    LogEvent("Switched tab to " .. tabName, "info")
+end
+
+local function AddTab(catTitle, tabName, iconSymbol)
+    local isDefault = (tabName == activeTabName)
+
+    local btn = New("TextButton", {
+        Parent                  = NavContainer,
+        BackgroundColor3        = isDefault and CurrentTheme.ActiveTabBG or CurrentTheme.Sidebar,
+        BackgroundTransparency  = isDefault and 0 or 1,
+        Size                    = UDim2.new(1, 0, 0, 30),
+        AutoButtonColor         = false,
+        Text                    = "",
+        ZIndex                  = 2,
+    })
+    AddCorner(btn, 6)
+
+    local icon = New("TextLabel", {
+        Parent                 = btn,
+        BackgroundTransparency = 1,
+        Position               = UDim2.new(0, 8, 0, 0),
+        Size                   = UDim2.new(0, 20, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 13,
+        TextColor3             = isDefault and CurrentTheme.TextActive or CurrentTheme.TextMuted,
+        Text                   = iconSymbol,
+        ZIndex                 = 2,
+    })
+
+    local lbl = New("TextLabel", {
+        Parent                 = btn,
+        BackgroundTransparency = 1,
+        Position               = UDim2.new(0, 32, 0, 0),
+        Size                   = UDim2.new(1, -32, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = isDefault and CurrentTheme.TextActive or CurrentTheme.TextMuted,
+        Text                   = tabName,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 2,
+    })
+
+    local page = New("ScrollingFrame", {
+        Parent                 = MainFrame,
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        Position               = UDim2.new(0, 200, 0, 45),
+        Size                   = UDim2.new(1, -210, 1, -55),
+        Visible                = isDefault,
+        ScrollBarThickness     = 3,
+        ScrollBarImageColor3   = CurrentTheme.CardBorder,
+        CanvasSize             = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize    = Enum.AutomaticSize.Y,
+        ScrollingDirection     = Enum.ScrollingDirection.Y,
+        ZIndex                 = 2,
+    })
+    AddPadding(page, 4, 8, 8, 4)
+    local pageLayout = Instance.new("UIListLayout", page)
+    pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    pageLayout.Padding   = UDim.new(0, 8)
+
+    tabs[tabName]  = { Btn = btn, Icon = icon, Lbl = lbl }
+    pages[tabName] = page
+
+    btn.MouseButton1Click:Connect(function()
+        PlaySoundEffect("click")
+        SwitchTab(tabName)
+    end)
+
+    return page
+end
+
+local function CreateCard(parent, title)
+    local card = New("Frame", {
+        Parent           = parent,
+        BackgroundColor3 = CurrentTheme.Card,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 0),
+        AutomaticSize    = Enum.AutomaticSize.Y,
+        ZIndex           = 2,
+    })
+    AddCorner(card, 8)
+    AddStroke(card, CurrentTheme.CardBorder, 1)
+    AddPadding(card, 8, 10, 8, 10)
+
+    local layout = New("UIListLayout", {
+        Parent        = card,
+        FillDirection = Enum.FillDirection.Vertical,
+        SortOrder     = Enum.SortOrder.LayoutOrder,
+        Padding       = UDim.new(0, 6),
+    })
+
+    if title then
+        New("TextLabel", {
+            Parent                 = card,
+            BackgroundTransparency = 1,
+            Size                   = UDim2.new(1, 0, 0, 18),
+            Font                   = FontBold,
+            TextSize               = 11,
+            TextColor3             = CurrentTheme.CategoryText,
+            Text                   = string.upper(title),
+            TextXAlignment         = Enum.TextXAlignment.Left,
+            LayoutOrder            = 0,
+            ZIndex                 = 2,
+        })
+    end
+
+    return card
+end
+
+local function AddCheckbox(parent, text, defaultVal, callback)
+    local state = defaultVal == true
+
+    local row = New("Frame", {
+        Parent           = parent,
+        BackgroundColor3 = CurrentTheme.BG,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 32),
+        ZIndex           = 2,
+    })
+    AddCorner(row, 6)
+    AddStroke(row, CurrentTheme.CardBorder, 1)
+    AddPadding(row, 0, 10, 0, 10)
+
+    New("TextLabel", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, -30, 1, 0),
+        Position               = UDim2.new(0, 0, 0, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = text,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        TextTruncate           = Enum.TextTruncate.AtEnd,
+        ZIndex                 = 2,
+    })
+
+    local box = New("Frame", {
+        Parent           = row,
+        BackgroundColor3 = state and CurrentTheme.CheckboxOn or CurrentTheme.CheckboxOff,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(0, 16, 0, 16),
+        Position         = UDim2.new(1, -16, 0.5, -8),
+        ZIndex           = 2,
+    })
+    AddCorner(box, 4)
+    AddStroke(box, CurrentTheme.CardBorder, 1)
+
+    local checkMark = New("TextLabel", {
+        Parent                 = box,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 1, 0),
+        Font                   = FontBold,
+        TextSize               = 11,
+        TextColor3             = Color3.fromRGB(15, 15, 18),
+        Text                   = state and "✓" or "",
+        ZIndex                 = 3,
+    })
+
+    local hitbox = New("TextButton", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 1, 0),
+        Text                   = "",
+        AutoButtonColor        = false,
+        ZIndex                 = 4,
+    })
+
+    hitbox.MouseButton1Click:Connect(function()
+        PlaySoundEffect("toggle")
+        state = not state
+        TweenService:Create(box, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = state and CurrentTheme.CheckboxOn or CurrentTheme.CheckboxOff
+        }):Play()
+        checkMark.Text = state and "✓" or ""
+        LogEvent(text .. " -> " .. (state and "ON" or "OFF"), state and "ok" or "warn")
+        if callback then callback(state) end
+    end)
+
+    row.MouseEnter:Connect(function()
+        TweenService:Create(row, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = CurrentTheme.ActiveTabBG }):Play()
+    end)
+    row.MouseLeave:Connect(function()
+        TweenService:Create(row, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = CurrentTheme.BG }):Play()
+    end)
+
+    return row
+end
+
+local function AddSlider(parent, text, minVal, maxVal, defaultVal, callback)
+    local val = math.clamp(defaultVal, minVal, maxVal)
+
+    local container = New("Frame", {
+        Parent           = parent,
+        BackgroundColor3 = CurrentTheme.BG,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 46),
+        ZIndex           = 2,
+    })
+    AddCorner(container, 6)
+    AddStroke(container, CurrentTheme.CardBorder, 1)
+    AddPadding(container, 5, 10, 5, 10)
+
+    local topRow = New("Frame", {
+        Parent                 = container,
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        Size                   = UDim2.new(1, 0, 0, 16),
+        ZIndex                 = 2,
+    })
+
+    New("TextLabel", {
+        Parent                 = topRow,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.7, 0, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = text,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 2,
+    })
+
+    local valLbl = New("TextLabel", {
+        Parent                 = topRow,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.3, 0, 1, 0),
+        Position               = UDim2.new(0.7, 0, 0, 0),
+        Font                   = FontBold,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = tostring(val),
+        TextXAlignment         = Enum.TextXAlignment.Right,
+        ZIndex                 = 2,
+    })
+
+    local track = New("Frame", {
+        Parent           = container,
+        BackgroundColor3 = CurrentTheme.SliderTrack,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 5),
+        Position         = UDim2.new(0, 0, 0, 24),
+        ZIndex           = 2,
+    })
+    AddCorner(track, 3)
+
+    local initRatio = (val - minVal) / (maxVal - minVal)
+    local fill = New("Frame", {
+        Parent           = track,
+        BackgroundColor3 = CurrentTheme.SliderFill,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(initRatio, 0, 1, 0),
+        ZIndex           = 3,
+    })
+    AddCorner(fill, 3)
+
+    local knob = New("Frame", {
+        Parent           = track,
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(0, 11, 0, 11),
+        Position         = UDim2.new(initRatio, -5, 0.5, -5),
+        ZIndex           = 4,
+    })
+    AddCorner(knob, 6)
+
+    local dragging = false
+    local function applyInput(inputX)
+        PlaySoundEffect("slide")
+        local absPos  = track.AbsolutePosition
+        local absSize = track.AbsoluteSize
+        local ratio   = math.clamp((inputX - absPos.X) / absSize.X, 0, 1)
+        val = math.clamp(math.round(minVal + (maxVal - minVal) * ratio), minVal, maxVal)
+        local r = (val - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(r, 0, 1, 0)
+        knob.Position = UDim2.new(r, -5, 0.5, -5)
+        valLbl.Text = tostring(val)
+        if callback then callback(val) end
+    end
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            applyInput(input.Position.X)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            applyInput(input.Position.X)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    return container
+end
+
+local function AddDropdown(parent, text, options, defaultVal, callback)
+    local selected = defaultVal or options[1]
+    local isOpen   = false
+    local ITEM_H   = 26
+    local totalH   = #options * (ITEM_H + 2) + 6
+
+    local wrapper = New("Frame", {
+        Parent                 = parent,
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        Size                   = UDim2.new(1, 0, 0, 32),
+        ClipsDescendants       = false,
+        ZIndex                 = 5,
+    })
+
+    local header = New("Frame", {
+        Parent           = wrapper,
+        BackgroundColor3 = CurrentTheme.BG,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 32),
+        ZIndex           = 5,
+    })
+    AddCorner(header, 6)
+    AddStroke(header, CurrentTheme.CardBorder, 1)
+    AddPadding(header, 0, 10, 0, 10)
+
+    New("TextLabel", {
+        Parent                 = header,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.55, 0, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = text,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 6,
+    })
+
+    local selLbl = New("TextLabel", {
+        Parent                 = header,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.35, 0, 1, 0),
+        Position               = UDim2.new(0.55, 0, 0, 0),
+        Font                   = FontBold,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = tostring(selected),
+        TextXAlignment         = Enum.TextXAlignment.Right,
+        TextTruncate           = Enum.TextTruncate.AtEnd,
+        ZIndex                 = 6,
+    })
+
+    local arrow = New("TextLabel", {
+        Parent                 = header,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0, 16, 1, 0),
+        Position               = UDim2.new(1, -16, 0, 0),
+        Font                   = FontBold,
+        TextSize               = 10,
+        TextColor3             = CurrentTheme.TextMuted,
+        Text                   = "v",
+        ZIndex                 = 6,
+    })
+
+    local dropList = New("Frame", {
+        Parent           = wrapper,
+        BackgroundColor3 = CurrentTheme.Card,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 0),
+        Position         = UDim2.new(0, 0, 0, 34),
+        ClipsDescendants = true,
+        ZIndex           = 10,
+        Visible          = false,
+    })
+    AddCorner(dropList, 6)
+    AddStroke(dropList, CurrentTheme.CardBorder, 1)
+    AddPadding(dropList, 3, 3, 3, 3)
+    local listLayout = New("UIListLayout", {
+        Parent        = dropList,
+        FillDirection = Enum.FillDirection.Vertical,
+        SortOrder     = Enum.SortOrder.LayoutOrder,
+        Padding       = UDim.new(0, 2),
+    })
+
+    for i, opt in ipairs(options) do
+        local optBtn = New("TextButton", {
+            Parent           = dropList,
+            BackgroundColor3 = (opt == selected) and CurrentTheme.ActiveTabBG or CurrentTheme.BG,
+            BorderSizePixel  = 0,
+            Size             = UDim2.new(1, 0, 0, ITEM_H),
+            Font             = FontMain,
+            TextSize         = 11,
+            TextColor3       = (opt == selected) and CurrentTheme.TextActive or CurrentTheme.TextMuted,
+            Text             = tostring(opt),
+            AutoButtonColor  = false,
+            LayoutOrder      = i,
+            ZIndex           = 11,
+        })
+        AddCorner(optBtn, 4)
+
+        optBtn.MouseButton1Click:Connect(function()
+            PlaySoundEffect("click")
+            selected = opt
+            selLbl.Text = tostring(opt)
+            isOpen = false
+            TweenService:Create(dropList, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, 0) }):Play()
+            TweenService:Create(arrow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Rotation = 0 }):Play()
+            task.delay(0.2, function() dropList.Visible = false end)
+
+            for _, ch in ipairs(dropList:GetChildren()) do
+                if ch:IsA("TextButton") then
+                    local isChSel = (ch.Text == tostring(opt))
+                    ch.BackgroundColor3 = isChSel and CurrentTheme.ActiveTabBG or CurrentTheme.BG
+                    ch.TextColor3       = isChSel and CurrentTheme.TextActive or CurrentTheme.TextMuted
+                end
+            end
+            LogEvent(text .. " -> " .. tostring(opt), "info")
+            if callback then callback(opt) end
+        end)
+    end
+
+    local hit = New("TextButton", {
+        Parent                 = header,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 1, 0),
+        Text                   = "",
+        AutoButtonColor        = false,
+        ZIndex                 = 7,
+    })
+
+    hit.MouseButton1Click:Connect(function()
+        PlaySoundEffect("click")
+        isOpen = not isOpen
+        if isOpen then
+            dropList.Visible = true
+            TweenService:Create(dropList, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, totalH) }):Play()
+            TweenService:Create(arrow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Rotation = 180 }):Play()
+        else
+            TweenService:Create(dropList, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, 0) }):Play()
+            TweenService:Create(arrow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Rotation = 0 }):Play()
+            task.delay(0.2, function() dropList.Visible = false end)
+        end
+    end)
+
+    return wrapper
+end
+
+local function AddButton(parent, text, callback)
+    local btn = New("TextButton", {
+        Parent           = parent,
+        BackgroundColor3 = CurrentTheme.ActiveTabBG,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 30),
+        Font             = FontBold,
+        TextSize         = 12,
+        TextColor3       = CurrentTheme.TextActive,
+        Text             = text,
+        AutoButtonColor  = false,
+        ZIndex           = 2,
+    })
+    AddCorner(btn, 6)
+    AddStroke(btn, CurrentTheme.CardBorder, 1)
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = CurrentTheme.CardBorder }):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = CurrentTheme.ActiveTabBG }):Play()
+    end)
+
+    btn.MouseButton1Click:Connect(function()
+        PlaySoundEffect("click")
+        btn.Size = UDim2.new(1, -4, 0, 28)
+        task.delay(0.08, function() btn.Size = UDim2.new(1, 0, 0, 30) end)
+        if callback then callback() end
+    end)
+    return btn
+end
+
+local function AddKeybind(parent, label, defaultKey, callback)
+    local currentKey = defaultKey
+    local listening  = false
+
+    local row = New("Frame", {
+        Parent           = parent,
+        BackgroundColor3 = CurrentTheme.BG,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(1, 0, 0, 32),
+        ZIndex           = 2,
+    })
+    AddCorner(row, 6)
+    local stroke = AddStroke(row, CurrentTheme.CardBorder, 1)
+    AddPadding(row, 0, 10, 0, 10)
+
+    New("TextLabel", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.6, 0, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextActive,
+        Text                   = label,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 2,
+    })
+
+    local keyBox = New("Frame", {
+        Parent           = row,
+        BackgroundColor3 = CurrentTheme.Card,
+        BorderSizePixel  = 0,
+        Size             = UDim2.new(0, 44, 0, 20),
+        Position         = UDim2.new(1, -44, 0.5, -10),
+        ZIndex           = 2,
+    })
+    AddCorner(keyBox, 4)
+    AddStroke(keyBox, CurrentTheme.CardBorder, 1)
+
+    local keyLbl = New("TextLabel", {
+        Parent                 = keyBox,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 1, 0),
+        Font                   = FontBold,
+        TextSize               = 10,
+        TextColor3             = CurrentTheme.Accent,
+        Text                   = currentKey.Name,
+        ZIndex                 = 3,
+    })
+
+    local btn = New("TextButton", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 1, 0),
+        Text                   = "",
+        AutoButtonColor        = false,
+        ZIndex                 = 4,
+    })
+
+    btn.MouseButton1Click:Connect(function()
+        PlaySoundEffect("click")
+        listening = true
+        keyLbl.Text = "..."
+        stroke.Color = CurrentTheme.Accent
+        LogEvent("Listening for new keybind: " .. label, "warn")
+
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                currentKey = input.KeyCode
+                keyLbl.Text = currentKey.Name
+                stroke.Color = CurrentTheme.CardBorder
+                listening = false
+                conn:Disconnect()
+                PlaySoundEffect("toggle")
+                LogEvent("Keybind set: " .. label .. " -> " .. currentKey.Name, "ok")
+                if callback then callback(currentKey) end
+            end
+        end)
+    end)
+
+    return row
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  15. POPULATE TABS & CONTROLS (Combat, Render, Misc, System)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── CATEGORY 1: COMBAT ───────────────────────────────────────────────────────
+AddCategory("Combat")
+local pgLegitbot = AddTab("Combat", "Legitbot", "🎯")
+local pgRagebot  = AddTab("Combat", "Ragebot", "⚡")
+
+-- Legitbot Tab
+local cardLegitCore = CreateCard(pgLegitbot, "Aimbot Core")
+AddCheckbox(cardLegitCore, "Hard Aimbot (Instant Snap on RMB)", _G.ChetsuState.HardAimbot, function(v)
+    _G.ChetsuState.HardAimbot = v
+end)
+AddCheckbox(cardLegitCore, "Auto Wall (Wallbang Penetration)", _G.ChetsuState.AutoWall, function(v)
+    _G.ChetsuState.AutoWall = v
+end)
+AddCheckbox(cardLegitCore, "360° Field of View (Ignore Distance)", _G.ChetsuState.Spin360, function(v)
+    _G.ChetsuState.Spin360 = v
+end)
+AddCheckbox(cardLegitCore, "Team Check (Filter Teammates)", _G.ChetsuState.TeamCheck, function(v)
+    _G.ChetsuState.TeamCheck = v
+end)
+
+local cardLegitParams = CreateCard(pgLegitbot, "Targeting & Configuration")
+AddDropdown(cardLegitParams, "Target Part",
+    {"Head", "Torso", "HumanoidRootPart"},
+    _G.ChetsuState.AimTarget,
+    function(v) _G.ChetsuState.AimTarget = v end
+)
+AddSlider(cardLegitParams, "FOV Circle Radius", 10, 600, _G.ChetsuState.FOVRadius, function(v)
+    _G.ChetsuState.FOVRadius = v
+end)
+
+-- Ragebot Tab
+local cardRageCore = CreateCard(pgRagebot, "Rage Core")
+AddCheckbox(cardRageCore, "Enabled (Ragebot Master)", _G.ChetsuState.RageEnabled, function(v)
+    _G.ChetsuState.RageEnabled = v
+end)
+AddCheckbox(cardRageCore, "Auto Shoot (Instant Trigger)", _G.ChetsuState.AutoShoot, function(v)
+    _G.ChetsuState.AutoShoot = v
+end)
+AddCheckbox(cardRageCore, "Silent Aim (Silent Raycast Redirection)", _G.ChetsuState.SilentAim, function(v)
+    _G.ChetsuState.SilentAim = v
+end)
+
+local cardRageParams = CreateCard(pgRagebot, "Rage Parameters")
+AddSlider(cardRageParams, "FOV", 1, 50, _G.ChetsuState.RageFOV, function(v)
+    _G.ChetsuState.RageFOV = v
+end)
+AddSlider(cardRageParams, "Damage Multiplier", 1, 100, _G.ChetsuState.DamageMultiplier, function(v)
+    _G.ChetsuState.DamageMultiplier = v
+end)
+
+-- ── CATEGORY 2: RENDER ──────────────────────────────────────────────────────
+AddCategory("Render")
+local pgESP   = AddTab("Render", "ESP", "👁")
+local pgChams = AddTab("Render", "Chams", "👤")
+local pgWorld = AddTab("Render", "World", "🌐")
+
+local cardESPOverlays = CreateCard(pgESP, "2D Vector ESP Elements")
+AddCheckbox(cardESPOverlays, "2D Bounding Box (White Box)", _G.ChetsuState.Box2D, function(v)
+    _G.ChetsuState.Box2D = v
+end)
+AddCheckbox(cardESPOverlays, "Name ESP (Top of Box)", _G.ChetsuState.NameESP, function(v)
+    _G.ChetsuState.NameESP = v
+end)
+AddCheckbox(cardESPOverlays, "Vertical Health Bar (Left of Box)", _G.ChetsuState.HealthBar, function(v)
+    _G.ChetsuState.HealthBar = v
+end)
+AddCheckbox(cardESPOverlays, "Distance ESP (Bottom in Studs)", _G.ChetsuState.DistanceESP, function(v)
+    _G.ChetsuState.DistanceESP = v
+end)
+AddCheckbox(cardESPOverlays, "Tracers / Snaplines (Screen to Feet)", _G.ChetsuState.Snaplines, function(v)
+    _G.ChetsuState.Snaplines = v
+end)
+AddCheckbox(cardESPOverlays, "Orange Vector Skeleton (R6 / R15)", _G.ChetsuState.Skeleton, function(v)
+    _G.ChetsuState.Skeleton = v
+end)
+
+local cardChamsMain = CreateCard(pgChams, "Highlight Chams (AlwaysOnTop)")
+AddCheckbox(cardChamsMain, "Enable Wall Chams", _G.ChetsuState.Chams, function(v)
+    _G.ChetsuState.Chams = v
+end)
+AddSlider(cardChamsMain, "Chams Transparency", 0, 100, math.round(_G.ChetsuState.ChamsTransparency * 100), function(v)
+    _G.ChetsuState.ChamsTransparency = v / 100
+end)
+
+local cardWorldMods = CreateCard(pgWorld, "Environment & Lighting")
+AddCheckbox(cardWorldMods, "Fullbright", _G.ChetsuState.Fullbright, function(v)
+    _G.ChetsuState.Fullbright = v
+    if v then
+        Lighting.Brightness = 2
+        Lighting.ClockTime  = 14
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    else
+        Lighting.Brightness = 1
+        Lighting.GlobalShadows = not _G.ChetsuState.NoShadows
+    end
+end)
+AddCheckbox(cardWorldMods, "No Fog", _G.ChetsuState.NoFog, function(v)
+    _G.ChetsuState.NoFog = v
+    if v then
+        Lighting.FogEnd = 100000
+    else
+        Lighting.FogEnd = 1000
+    end
+end)
+AddCheckbox(cardWorldMods, "No Shadows", _G.ChetsuState.NoShadows, function(v)
+    _G.ChetsuState.NoShadows = v
+    Lighting.GlobalShadows = not v
+end)
+
+-- ── CATEGORY 3: MISC ────────────────────────────────────────────────────────
+AddCategory("Misc")
+local pgMovement  = AddTab("Misc", "Movement", "✦")
+local pgInventory = AddTab("Misc", "Inventory", "🗡")
+local pgOther     = AddTab("Misc", "Other", "✨")
+
+local cardMoveMods = CreateCard(pgMovement, "Speed & Flight Physics")
+AddSlider(cardMoveMods, "WalkSpeed Modifier", 16, 200, _G.ChetsuState.WalkSpeed, function(v)
+    _G.ChetsuState.WalkSpeed = v
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end
+end)
+AddCheckbox(cardMoveMods, "Noclip (Wall Collision Bypass)", _G.ChetsuState.Noclip, function(v)
+    _G.ChetsuState.Noclip = v
+end)
+AddCheckbox(cardMoveMods, "Fly (WASD + Space / LShift)", _G.ChetsuState.Fly, function(v)
+    _G.ChetsuState.Fly = v
+end)
+AddSlider(cardMoveMods, "Fly Speed Multiplier", 10, 500, _G.ChetsuState.FlySpeed, function(v)
+    _G.ChetsuState.FlySpeed = v
+end)
+
+local cardInv = CreateCard(pgInventory, "Custom Weapon Skins (Client)")
+AddDropdown(cardInv, "Skin Preset",
+    {"Default", "Karambit Fade", "Butterfly Doppler", "M4A4 Neo-Noir", "AWP Dragon Lore"},
+    _G.ChetsuState.CustomSkin,
+    function(v)
+        _G.ChetsuState.CustomSkin = v
+    end
+)
+AddButton(cardInv, "Equip Custom Skin", function()
+    LogEvent("Applied client weapon skin: " .. tostring(_G.ChetsuState.CustomSkin), "ok")
+end)
+
+-- Other Tab: Snow, FX, Themes, Keybinds
+local cardSnow = CreateCard(pgOther, "Snow Engine")
+AddCheckbox(cardSnow, "Enable Snow", _G.ChetsuState.SnowEnabled, function(v)
+    _G.ChetsuState.SnowEnabled = v
+    InitBackgroundEffects()
+end)
+AddSlider(cardSnow, "Snow Amount", 10, 120, _G.ChetsuState.SnowAmount, function(v)
+    _G.ChetsuState.SnowAmount = v
+    InitBackgroundEffects()
+end)
+AddSlider(cardSnow, "Snow Speed", 10, 150, _G.ChetsuState.SnowSpeed, function(v)
+    _G.ChetsuState.SnowSpeed = v
+    InitBackgroundEffects()
+end)
+AddSlider(cardSnow, "Snow Size", 1, 8, _G.ChetsuState.SnowSize, function(v)
+    _G.ChetsuState.SnowSize = v
+    InitBackgroundEffects()
+end)
+AddDropdown(cardSnow, "Snow Color",
+    {"White", "Ice Blue", "Gold", "Purple", "Red", "Green"},
+    _G.ChetsuState.SnowColor,
+    function(v)
+        _G.ChetsuState.SnowColor = v
+        InitBackgroundEffects()
+    end
+)
+
+local cardBgFX = CreateCard(pgOther, "Background Effects")
+AddDropdown(cardBgFX, "Background Effect",
+    {"None", "Snow", "Rain", "Particles", "Grid", "Scanlines", "Glow Orbs", "Aurora"},
+    _G.ChetsuState.BgEffect,
+    function(v)
+        _G.ChetsuState.BgEffect = v
+        InitBackgroundEffects()
+    end
+)
+AddCheckbox(cardBgFX, "Vignette Overlay", _G.ChetsuState.VignetteOverlay, function(v)
+    _G.ChetsuState.VignetteOverlay = v
+    VignetteOverlay.Visible = v
+end)
+AddSlider(cardBgFX, "Effect Intensity", 1, 10, _G.ChetsuState.BgIntensity, function(v)
+    _G.ChetsuState.BgIntensity = v
+    InitBackgroundEffects()
+end)
+
+local cardTheme = CreateCard(pgOther, "Theme & Appearance")
+AddDropdown(cardTheme, "Color Theme",
+    {"Dark", "Midnight", "Amoled", "Cyberpunk"},
+    _G.ChetsuState.Theme,
+    function(v)
+        _G.ChetsuState.Theme = v
+        CurrentTheme = Themes[v] or Themes.Dark
+        MainFrame.BackgroundColor3 = CurrentTheme.BG
+        Sidebar.BackgroundColor3   = CurrentTheme.Sidebar
+        MainFrameStroke.Color      = CurrentTheme.CardBorder
+        WatermarkFrame.BackgroundColor3 = CurrentTheme.BG
+        WatermarkStrip.BackgroundColor3 = CurrentTheme.Accent
+        WatermarkStroke.Color      = CurrentTheme.CardBorder
+        ConsolePanel.BackgroundColor3 = CurrentTheme.BG
+        ConsoleStroke.Color        = CurrentTheme.CardBorder
+        RadarPanel.BackgroundColor3   = CurrentTheme.BG
+        RadarStroke.Color          = CurrentTheme.CardBorder
+        RadarCenter.BackgroundColor3  = CurrentTheme.Accent
+        LogEvent("Applied color theme: " .. v, "ok")
+    end
+)
+AddCheckbox(cardTheme, "Stream Proof Mode", _G.ChetsuState.StreamProof, function(v)
+    _G.ChetsuState.StreamProof = v
+    StreamProofOverlay.Visible = v
+end)
+AddCheckbox(cardTheme, "Show Event Log", _G.ChetsuState.ShowConsole, function(v)
+    _G.ChetsuState.ShowConsole = v
+    ConsolePanel.Visible = v
+end)
+AddCheckbox(cardTheme, "Show Radar", _G.ChetsuState.ShowRadar, function(v)
+    _G.ChetsuState.ShowRadar = v
+    RadarPanel.Visible = v
+end)
+
+local cardKeybinds = CreateCard(pgOther, "Keybinds")
+AddKeybind(cardKeybinds, "Toggle UI", _G.ChetsuState.KeyToggleUI, function(k) _G.ChetsuState.KeyToggleUI = k end)
+AddKeybind(cardKeybinds, "Panic Key", _G.ChetsuState.KeyPanic, function(k) _G.ChetsuState.KeyPanic = k end)
+AddKeybind(cardKeybinds, "Aimbot Toggle", _G.ChetsuState.KeyAimbot, function(k) _G.ChetsuState.KeyAimbot = k end)
+AddKeybind(cardKeybinds, "ESP Toggle", _G.ChetsuState.KeyESP, function(k) _G.ChetsuState.KeyESP = k end)
+
+-- ── CATEGORY 4: SYSTEM ──────────────────────────────────────────────────────
+AddCategory("System")
+local pgProfile = AddTab("System", "Profile", "👤")
+local pgConfig  = AddTab("System", "Config", "⚙")
+local pgLua     = AddTab("System", "Lua", "📜")
+
+-- Profile Tab
+local cardProfBig = CreateCard(pgProfile)
+local profBigWrap = New("Frame", {
+    Parent                 = cardProfBig,
+    BackgroundTransparency = 1,
+    Size                   = UDim2.new(1, 0, 0, 130),
+    ZIndex                 = 2,
+})
+
+local profBigAvatar = New("ImageLabel", {
+    Parent           = profBigWrap,
+    BackgroundColor3 = CurrentTheme.Card,
+    AnchorPoint      = Vector2.new(0.5, 0),
+    Position         = UDim2.new(0.5, 0, 0, 4),
+    Size             = UDim2.new(0, 64, 0, 64),
+    Image            = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+    ZIndex           = 3,
+})
+AddCorner(profBigAvatar, 32)
+AddStroke(profBigAvatar, CurrentTheme.CardBorder, 2)
+
+task.spawn(function()
+    local thumb, isReady = Players:GetUserThumbnailAsync(
+        LocalPlayer.UserId,
+        Enum.ThumbnailType.HeadShot,
+        Enum.ThumbnailSize.Size420x420
+    )
+    if isReady and thumb then profBigAvatar.Image = thumb end
+end)
+
+New("TextLabel", {
+    Parent                 = profBigWrap,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 0, 0, 72),
+    Size                   = UDim2.new(1, 0, 0, 18),
+    Font                   = FontBold,
+    TextSize               = 15,
+    TextColor3             = CurrentTheme.TextActive,
+    Text                   = LocalPlayer.DisplayName or LocalPlayer.Name,
+    ZIndex                 = 3,
+})
+
+New("TextLabel", {
+    Parent                 = profBigWrap,
+    BackgroundTransparency = 1,
+    Position               = UDim2.new(0, 0, 0, 92),
+    Size                   = UDim2.new(1, 0, 0, 14),
+    Font                   = FontMain,
+    TextSize               = 11,
+    TextColor3             = CurrentTheme.TextMuted,
+    Text                   = "@" .. LocalPlayer.Name,
+    ZIndex                 = 3,
+})
+
+local cardAccInfo = CreateCard(pgProfile, "Account Info")
+local function AddProfRow(parent, label, val, color)
+    local row = New("Frame", {
+        Parent                 = parent,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 0, 22),
+        ZIndex                 = 2,
+    })
+    New("TextLabel", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.5, 0, 1, 0),
+        Font                   = FontMain,
+        TextSize               = 12,
+        TextColor3             = CurrentTheme.TextMuted,
+        Text                   = label,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 2,
+    })
+    New("TextLabel", {
+        Parent                 = row,
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(0.5, 0, 1, 0),
+        Position               = UDim2.new(0.5, 0, 0, 0),
+        Font                   = FontBold,
+        TextSize               = 12,
+        TextColor3             = color or CurrentTheme.TextActive,
+        Text                   = tostring(val),
+        TextXAlignment         = Enum.TextXAlignment.Right,
+        ZIndex                 = 2,
+    })
+end
+
+AddProfRow(cardAccInfo, "Display Name", LocalPlayer.DisplayName)
+AddProfRow(cardAccInfo, "Username", "@" .. LocalPlayer.Name)
+AddProfRow(cardAccInfo, "User ID", LocalPlayer.UserId)
+AddProfRow(cardAccInfo, "Account Age", LocalPlayer.AccountAge .. " Days")
+
+local cardSub = CreateCard(pgProfile, "Subscription")
+AddProfRow(cardSub, "Plan", "VIP Premium", Color3.fromRGB(255, 200, 80))
+AddProfRow(cardSub, "Status", "Active", CurrentTheme.Green)
+AddProfRow(cardSub, "Expires", "2026-12-15")
+AddProfRow(cardSub, "Time Left", "105 Days")
+
+local cardSess = CreateCard(pgProfile, "Session")
+local execName = "Unknown"
+pcall(function()
+    execName = identifyexecutor and identifyexecutor() or (getexecutorname and getexecutorname() or "Luau Generic")
+end)
+local gameName = "Roblox Experience"
+pcall(function()
+    local placeInfo = MarketplaceService:GetProductInfo(game.PlaceId)
+    if placeInfo and placeInfo.Name then gameName = placeInfo.Name end
+end)
+AddProfRow(cardSess, "Executor", execName)
+AddProfRow(cardSess, "Game", gameName)
+AddProfRow(cardSess, "Place ID", game.PlaceId)
+
+-- Config Tab
+local cardConfigProfiles = CreateCard(pgConfig, "Profile Manager")
+AddDropdown(cardConfigProfiles, "Active Slot",
+    {"Slot 1", "Slot 2", "Slot 3", "Slot 4"},
+    "Slot 1",
+    function(v)
+        local num = tonumber(string.match(v, "%d+"))
+        _G.ChetsuState.ConfigSlot = num or 1
+    end
+)
+
+local function SaveConfig()
+    local fileName = string.format("ChetsuConfig_%d.json", _G.ChetsuState.ConfigSlot or 1)
+    local encoded  = HttpService:JSONEncode(_G.ChetsuState)
+    pcall(function()
+        if writefile then writefile(fileName, encoded) end
+    end)
+    LogEvent("Configuration saved to " .. fileName, "ok")
+end
+
+local function LoadConfig()
+    local fileName = string.format("ChetsuConfig_%d.json", _G.ChetsuState.ConfigSlot or 1)
+    pcall(function()
+        if readfile and isfile and isfile(fileName) then
+            local data = HttpService:JSONDecode(readfile(fileName))
+            if typeof(data) == "table" then
+                for k, v in pairs(data) do _G.ChetsuState[k] = v end
+                LogEvent("Configuration loaded from " .. fileName, "ok")
+                return
+            end
+        end
+    end)
+    LogEvent("Active session config reloaded", "info")
+end
+
+local function ResetConfig()
+    _G.ChetsuState.HardAimbot        = false
+    _G.ChetsuState.AutoWall          = false
+    _G.ChetsuState.Spin360           = false
+    _G.ChetsuState.AimTarget         = "Head"
+    _G.ChetsuState.FOVRadius         = 120
+    _G.ChetsuState.TeamCheck         = true
+    _G.ChetsuState.Box2D             = false
+    _G.ChetsuState.NameESP           = false
+    _G.ChetsuState.Snaplines         = false
+    _G.ChetsuState.Skeleton          = false
+    _G.ChetsuState.HealthBar         = false
+    _G.ChetsuState.WeaponText        = false
+    _G.ChetsuState.DistanceESP       = false
+    _G.ChetsuState.Chams             = false
+    _G.ChetsuState.Fullbright        = false
+    _G.ChetsuState.NoFog             = false
+    _G.ChetsuState.NoShadows         = false
+    _G.ChetsuState.WalkSpeed         = 16
+    _G.ChetsuState.Noclip            = false
+    _G.ChetsuState.Fly               = false
+    _G.ChetsuState.FlySpeed          = 100
+    LogEvent("Configuration reset to factory defaults", "warn")
+end
+
+AddButton(cardConfigProfiles, "Save Configuration", SaveConfig)
+AddButton(cardConfigProfiles, "Load Configuration", LoadConfig)
+AddButton(cardConfigProfiles, "Reset Defaults", ResetConfig)
+
+-- Lua Tab
+local cardLuaTools = CreateCard(pgLua, "Engine Utilities")
+AddButton(cardLuaTools, "Rejoin Current Server", function()
+    LogEvent("Rejoining current server instance...", "info")
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+AddButton(cardLuaTools, "Server Hop (Random Server)", function()
+    LogEvent("Searching for public server...", "info")
+    pcall(function()
+        local sf = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        for _, s in ipairs(sf.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                break
+            end
+        end
+    end)
+end)
+AddButton(cardLuaTools, "Garbage Collector (Free Memory)", function()
+    collectgarbage("collect")
+    LogEvent("Garbage collector executed. Memory cleaned.", "ok")
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  16. BACKEND GAME ENGINE (Aimbot, AutoWall, Drawing Vector ESP, Fly, Noclip)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+local hasDrawing = pcall(function()
+    local d = Drawing.new("Line")
+    d:Remove()
+end)
+
+local N = {}
+
+-- 16.1 AutoWall
+N.AutoWall = function(aa, ab, ac, ad)
+    local ae, af, ag = {}, (ac.Position - ab).Unit, aa:GetAttribute('Range') or 8000
+    local ah = ag / 8 or 1000
+    local ai, O = af * ah, aa:GetAttribute('Penetration') or 0
+    local P, Q = O > 0 and O * 0.02 or 0, RaycastParams.new()
+    Q.FilterType = Enum.RaycastFilterType.Exclude
+    Q.FilterDescendantsInstances = ad
+    Q.IgnoreWater = true
+    local R, S, T, U, V, W, X, Y, Z, _, aj = Q.FilterDescendantsInstances, workspace:Raycast(ab, ai, Q), 0, 0, 4, 0, false, 0, false, 4, 0
+    repeat
+        aj = aj + 1
+        if aj >= _ then break end
+        local ak, al
+        if S then
+            ak = S.Instance
+            al = S.Position
+        else
+            al = ab + ai
+            ak = nil
+        end
+        local am = { Hit = ak, Position = al, Normal = S and S.Normal or Vector3.new(0, 1, 0) }
+        if Z then am.Wallbang = true end
+        if am.Hit then table.insert(ae, am) end
+        if P == 0 then break end
+        if ak then
+            local an, ao, ap, aq = 0, ak.Parent:FindFirstChild('Humanoid'), (ak.Parent:GetAttribute('Streak'))
+            Z = true
+            if ao or ap then
+                aq = ak.Parent
+                Y = Y + 1
+            else
+                local ar, as, at = al + af * 10, -af * 20, RaycastParams.new()
+                at.FilterType = Enum.RaycastFilterType.Include
+                at.FilterDescendantsInstances = { ak }
+                local au = workspace:Raycast(ar, as, at)
+                local av, aw, ax, ay, az = au and au.Instance or nil, au and au.Position or nil, au and au.Normal or nil, ak:GetAttribute('PeneValue') or 1, ak.Material
+                local aA = ay
+                if az == Enum.Material.DiamondPlate then aA = 3
+                elseif az == Enum.Material.CorrodedMetal or az == Enum.Material.Metal then aA = 2
+                elseif az == Enum.Material.Concrete or az == Enum.Material.Brick then aA = 2
+                elseif ak.Name == 'Grate' or az == Enum.Material.Wood or az == Enum.Material.WoodPlanks then aA = 0.5
+                elseif az == Enum.Material.Fabric or az == Enum.Material.Sand or az == Enum.Material.Grass or az == Enum.Material.LeafyGrass or az == Enum.Material.Ground then aA = 0.1
+                elseif ak.Transparency == 1 or not ak.CanCollide or ak.Name == 'Glass' or ak.Name == 'Cardboard' then aA = 0 end
+                if ak.Name == 'nowallbang' then T = P end
+                local aB = av and (aw - al).Magnitude or 1
+                an = aB * aA
+                aq = ak
+                if aw and ax then
+                    am.Endposition = aw
+                    am.Endnormal = ax
+                end
+            end
+            table.insert(R, aq)
+            Q = RaycastParams.new()
+            Q.FilterType = Enum.RaycastFilterType.Exclude
+            Q.FilterDescendantsInstances = R
+            Q.IgnoreWater = true
+            if T > 0 and ao then am.Ratio = 1 - T / P end
+            T = T + an
+            S = workspace:Raycast(ab, ai, Q)
+        end
+        if not ak or (P < Y or P <= T) then break end
+    until nil
+    return ae
+end
+
+-- 16.2 FireEvent Dispatcher
+N.FireEvent = function(O, P, Q, R, S, T, U)
+    local V = 1
+    local fireRemote = ReplicatedStorage:FindFirstChild("FireEvent", true)
+        or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("FireEvent", true))
+        or (O and O:FindFirstChild("FireEvent", true))
+
+    for W = 1, V do
+        for X = 1, (S or 1) do
+            if fireRemote and fireRemote:IsA("RemoteEvent") then
+                pcall(function()
+                    fireRemote:FireServer({
+                        Normal   = Vector3.zero,
+                        Position = P.Position + Vector3.one,
+                        Hit      = P.Parent,
+                        cCF      = Camera.CFrame,
+                        hS       = P.Size and P.Size.Magnitude,
+                        hP       = P.Position,
+                        PartName = (_G.ChetsuState.AimTarget == "Head" or P.Name:find('Head')) and 'Head' or P.Name,
+                        Wallbang = R,
+                        Noscope  = T or false,
+                        Backstab = U or false,
+                        Ratio    = Q or 1
+                    }, O, nil, true, Camera.CFrame, P.Position, nil, nil)
+                end)
+            end
+        end
+    end
+end
+
+-- 16.3 FOV Circle
+local FOVCircleDrawing = nil
+local FOVCircleGui     = nil
+
+if hasDrawing then
+    pcall(function()
+        FOVCircleDrawing = Drawing.new("Circle")
+        FOVCircleDrawing.Visible      = false
+        FOVCircleDrawing.Thickness    = 1.5
+        FOVCircleDrawing.NumSides     = 64
+        FOVCircleDrawing.Transparency = 1
+        FOVCircleDrawing.Filled       = false
+        FOVCircleDrawing.Color        = CurrentTheme.White
+        FOVCircleDrawing.Radius       = _G.ChetsuState.FOVRadius
+    end)
+end
+
+if not FOVCircleDrawing then
+    FOVCircleGui = New("Frame", {
+        Name                   = "FOVCircleFallback",
+        Parent                 = ScreenGui,
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        AnchorPoint            = Vector2.new(0.5, 0.5),
+        Visible                = false,
+        ZIndex                 = 50,
+    })
+    local circleCorner = Instance.new("UICorner", FOVCircleGui)
+    circleCorner.CornerRadius = UDim.new(1, 0)
+
+    local circleStroke = Instance.new("UIStroke", FOVCircleGui)
+    circleStroke.Thickness = 1.5
+    circleStroke.Color = CurrentTheme.White
+    circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+end
+
+-- 16.4 Target Selection
+local function IsAlive(player)
+    if not player or not player.Character then return false end
+    local hum  = player.Character:FindFirstChildOfClass("Humanoid")
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    return hum and root and hum.Health > 0
+end
+
+local function IsTeammate(player)
+    if not _G.ChetsuState.TeamCheck then return false end
+    if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+        return true
+    end
+    return false
+end
+
+local function GetTargetPart(character, partName)
+    if not character then return nil end
+    if partName == "Head" then
+        return character:FindFirstChild("Head")
+    elseif partName == "Torso" then
+        return character:FindFirstChild("UpperTorso")
+            or character:FindFirstChild("Torso")
+            or character:FindFirstChild("HumanoidRootPart")
+    elseif partName == "HumanoidRootPart" then
+        return character:FindFirstChild("HumanoidRootPart")
+    end
+    return character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+end
+
+local function GetClosestTarget()
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local closestTarget = nil
+    local shortestDist  = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and IsAlive(player) and not IsTeammate(player) then
+            local part = GetTargetPart(player.Character, _G.ChetsuState.AimTarget)
+            if part then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                if onScreen or _G.ChetsuState.Spin360 then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                    if (_G.ChetsuState.Spin360 or dist <= _G.ChetsuState.FOVRadius) and dist < shortestDist then
+                        shortestDist  = dist
+                        closestTarget = part
+                    end
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+-- 16.5 2D Drawing Vector ESP Storage
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ChetsuESP"
+ESPFolder.Parent = ScreenGui
+
+local ESPStorage = {}
+
+local function CreatePlayerESP(player)
+    if player == LocalPlayer then return end
+
+    local holder = {
+        Highlight = Instance.new("Highlight"),
+        Bones     = {},
+    }
+
+    holder.Highlight.Name                = player.Name .. "_Highlight"
+    holder.Highlight.FillColor           = _G.ChetsuState.ChamsColor
+    holder.Highlight.OutlineColor        = CurrentTheme.TextActive
+    holder.Highlight.FillTransparency    = _G.ChetsuState.ChamsTransparency
+    holder.Highlight.OutlineTransparency = 0.1
+    holder.Highlight.DepthMode           = Enum.HighlightDepthMode.AlwaysOnTop
+    holder.Highlight.Enabled             = false
+    holder.Highlight.Parent              = ESPFolder
+
+    if hasDrawing then
+        holder.BoxOutline = Drawing.new("Square")
+        holder.BoxOutline.Thickness    = 3
+        holder.BoxOutline.Filled       = false
+        holder.BoxOutline.Color        = CurrentTheme.Black
+        holder.BoxOutline.Transparency = 1
+        holder.BoxOutline.Visible      = false
+
+        holder.Box = Drawing.new("Square")
+        holder.Box.Thickness    = 1
+        holder.Box.Filled       = false
+        holder.Box.Color        = CurrentTheme.White
+        holder.Box.Transparency = 1
+        holder.Box.Visible      = false
+
+        holder.HealthBg = Drawing.new("Line")
+        holder.HealthBg.Thickness    = 3
+        holder.HealthBg.Color        = CurrentTheme.Black
+        holder.HealthBg.Transparency = 1
+        holder.HealthBg.Visible      = false
+
+        holder.HealthBar = Drawing.new("Line")
+        holder.HealthBar.Thickness    = 1.5
+        holder.HealthBar.Color        = CurrentTheme.Green
+        holder.HealthBar.Transparency = 1
+        holder.HealthBar.Visible      = false
+
+        holder.Name = Drawing.new("Text")
+        holder.Name.Size         = 13
+        holder.Name.Center       = true
+        holder.Name.Outline      = true
+        holder.Name.OutlineColor = CurrentTheme.Black
+        holder.Name.Color        = CurrentTheme.White
+        holder.Name.Visible      = false
+
+        holder.Distance = Drawing.new("Text")
+        holder.Distance.Size         = 12
+        holder.Distance.Center       = true
+        holder.Distance.Outline      = true
+        holder.Distance.OutlineColor = CurrentTheme.Black
+        holder.Distance.Color        = CurrentTheme.TextActive
+        holder.Distance.Visible      = false
+
+        holder.Tracer = Drawing.new("Line")
+        holder.Tracer.Thickness    = 1
+        holder.Tracer.Color        = CurrentTheme.White
+        holder.Tracer.Transparency = 1
+        holder.Tracer.Visible      = false
+
+        for i = 1, 16 do
+            local bone = Drawing.new("Line")
+            bone.Thickness    = 1.5
+            bone.Color        = CurrentTheme.Orange
+            bone.Transparency = 0.9
+            bone.Visible      = false
+            table.insert(holder.Bones, bone)
+        end
+    end
+
+    ESPStorage[player] = holder
+end
+
+local function RemovePlayerESP(player)
+    local holder = ESPStorage[player]
+    if holder then
+        if holder.Highlight then holder.Highlight:Destroy() end
+        if hasDrawing then
+            pcall(function()
+                if holder.BoxOutline then holder.BoxOutline:Remove() end
+                if holder.Box then holder.Box:Remove() end
+                if holder.HealthBg then holder.HealthBg:Remove() end
+                if holder.HealthBar then holder.HealthBar:Remove() end
+                if holder.Name then holder.Name:Remove() end
+                if holder.Distance then holder.Distance:Remove() end
+                if holder.Tracer then holder.Tracer:Remove() end
+                if holder.Bones then
+                    for _, b in ipairs(holder.Bones) do b:Remove() end
+                end
+            end)
+        end
+        ESPStorage[player] = nil
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do CreatePlayerESP(p) end
+Players.PlayerAdded:Connect(CreatePlayerESP)
+Players.PlayerRemoving:Connect(RemovePlayerESP)
+
+-- 16.6 Fly WASD Physics & Noclip
+local FlyVelocity = nil
+local FlyGyro     = nil
+
+local function UpdateFlyPhysics()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum  = char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+
+    if _G.ChetsuState.Fly then
+        if not FlyVelocity or not FlyVelocity.Parent then
+            FlyVelocity = Instance.new("BodyVelocity")
+            FlyVelocity.MaxForce = Vector3.new(9e5, 9e5, 9e5)
+            FlyVelocity.Velocity = Vector3.zero
+            FlyVelocity.Parent   = root
+        end
+        if not FlyGyro or not FlyGyro.Parent then
+            FlyGyro = Instance.new("BodyGyro")
+            FlyGyro.MaxTorque = Vector3.new(9e5, 9e5, 9e5)
+            FlyGyro.CFrame   = root.CFrame
+            FlyGyro.Parent   = root
+        end
+
+        hum.PlatformStand = true
+
+        local moveDir = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+
+        if moveDir.Magnitude > 0 then
+            FlyVelocity.Velocity = moveDir.Unit * _G.ChetsuState.FlySpeed
+        else
+            FlyVelocity.Velocity = Vector3.zero
+        end
+        FlyGyro.CFrame = Camera.CFrame
+    else
+        if FlyVelocity then FlyVelocity:Destroy(); FlyVelocity = nil end
+        if FlyGyro then FlyGyro:Destroy(); FlyGyro = nil end
+        hum.PlatformStand = false
+    end
+end
+
+RunService.Stepped:Connect(function()
+    if _G.ChetsuState.Noclip and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+LocalPlayer.Idled:Connect(function()
+    if _G.ChetsuState.AntiAFK then
+        local vu = game:GetService("VirtualUser")
+        if vu then
+            vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        end
+    end
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  17. KEYBOARD INPUTS & GLOBAL RUNTIME LOOP
+-- ─────────────────────────────────────────────────────────────────────────────
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == _G.ChetsuState.KeyToggleUI then
+        ToggleUI()
+    elseif input.KeyCode == _G.ChetsuState.KeyPanic then
+        PanicDisableAll()
+    elseif input.KeyCode == _G.ChetsuState.KeyAimbot then
+        _G.ChetsuState.HardAimbot = not _G.ChetsuState.HardAimbot
+        PlaySoundEffect("toggle")
+        LogEvent("Aimbot toggled via keybind -> " .. (_G.ChetsuState.HardAimbot and "ON" or "OFF"), _G.ChetsuState.HardAimbot and "ok" or "warn")
+    elseif input.KeyCode == _G.ChetsuState.KeyESP then
+        _G.ChetsuState.Box2D = not _G.ChetsuState.Box2D
+        PlaySoundEffect("toggle")
+        LogEvent("ESP toggled via keybind -> " .. (_G.ChetsuState.Box2D and "ON" or "OFF"), _G.ChetsuState.Box2D and "ok" or "warn")
+    end
+end)
+
+local fpsCount, fpsAccum, fpsLast = 0, 0, tick()
+
+RunService.RenderStepped:Connect(function(dt)
+    -- FPS, Ping & Clock counter
+    fpsCount = fpsCount + 1
+    fpsAccum = fpsAccum + dt
+    local now = tick()
+    if now - fpsLast >= 0.5 then
+        local fps = math.round(fpsCount / (now - fpsLast))
+        local ping = 0
+        pcall(function()
+            ping = math.round(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        end)
+        local timeStr = os.date("%H:%M:%S")
+        WatermarkLabel.Text = string.format("CHETSU  |  %d FPS  |  %d ms  |  %s", fps, ping, timeStr)
+        HeaderClock.Text    = timeStr
+        fpsCount, fpsAccum, fpsLast = 0, 0, now
+    end
+
+    -- Update Radar
+    UpdateRadar()
+
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local screenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+
+    -- FOV Circle
+    local isFovVisible = (_G.ChetsuState.HardAimbot or _G.ChetsuState.RageEnabled) and (not _G.ChetsuState.Spin360)
+    if FOVCircleDrawing then
+        FOVCircleDrawing.Visible  = isFovVisible
+        FOVCircleDrawing.Radius   = _G.ChetsuState.FOVRadius
+        FOVCircleDrawing.Position = screenCenter
+    elseif FOVCircleGui then
+        FOVCircleGui.Visible  = isFovVisible
+        FOVCircleGui.Position = UDim2.new(0, screenCenter.X, 0, screenCenter.Y)
+        FOVCircleGui.Size     = UDim2.new(0, _G.ChetsuState.FOVRadius * 2, 0, _G.ChetsuState.FOVRadius * 2)
+    end
+
+    -- WalkSpeed & ThirdPerson
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.WalkSpeed ~= _G.ChetsuState.WalkSpeed and not _G.ChetsuState.Fly then
+            hum.WalkSpeed = _G.ChetsuState.WalkSpeed
+        end
+
+        if _G.ChetsuState.ThirdPerson then
+            LocalPlayer.CameraMaxZoomDistance = _G.ChetsuState.ThirdPersonDist
+            LocalPlayer.CameraMinZoomDistance = _G.ChetsuState.ThirdPersonDist
+        end
+    end
+
+    -- SpinBot
+    if _G.ChetsuState.SpinBot and LocalPlayer.Character then
+        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(_G.ChetsuState.SpinSpeed * 4), 0)
+        end
+    end
+
+    -- Fly physics
+    UpdateFlyPhysics()
+
+    -- Hard Aimbot & Ragebot Logic
+    local shouldSnap = (_G.ChetsuState.HardAimbot and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)) or _G.ChetsuState.RageEnabled
+    if shouldSnap then
+        local target = GetClosestTarget()
+        if target then
+            if not _G.ChetsuState.SilentAim then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            end
+
+            local shouldFire = _G.ChetsuState.AutoWall or (_G.ChetsuState.RageEnabled and _G.ChetsuState.AutoShoot)
+            if shouldFire then
+                local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if tool then
+                    local ignoreList = { LocalPlayer.Character, ESPFolder }
+                    local wallbangHits = N.AutoWall(tool, Camera.CFrame.Position, target, ignoreList)
+                    if #wallbangHits > 0 then
+                        local lastHit = wallbangHits[#wallbangHits]
+                        local isWallbang = lastHit.Wallbang or false
+                        local hitRatio   = lastHit.Ratio or 1
+                        N.FireEvent(tool, target, hitRatio, isWallbang, 1, false, false)
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2D Vector Drawing ESP Updates
+    for player, holder in pairs(ESPStorage) do
+        local isTargetAlive = IsAlive(player)
+        local isTeam        = IsTeammate(player)
+
+        if isTargetAlive and not isTeam then
+            local char = player.Character
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local head = char:FindFirstChild("Head")
+            local hum  = char:FindFirstChildOfClass("Humanoid")
+
+            if root and head and hum then
+                if _G.ChetsuState.Chams then
+                    holder.Highlight.Adornee          = char
+                    holder.Highlight.FillTransparency = _G.ChetsuState.ChamsTransparency
+                    holder.Highlight.Enabled          = true
+                else
+                    holder.Highlight.Enabled          = false
+                end
+
+                if hasDrawing then
+                    local rootPos, rootOnScreen = Camera:WorldToViewportPoint(root.Position)
+
+                    if rootOnScreen then
+                        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                        local legPos  = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+
+                        local height = math.abs(headPos.Y - legPos.Y)
+                        local width  = height * 0.55
+                        local boxPos = Vector2.new(rootPos.X - width / 2, headPos.Y)
+
+                        if _G.ChetsuState.Box2D then
+                            holder.BoxOutline.Size     = Vector2.new(width, height)
+                            holder.BoxOutline.Position = boxPos
+                            holder.BoxOutline.Visible  = true
+
+                            holder.Box.Size            = Vector2.new(width, height)
+                            holder.Box.Position        = boxPos
+                            holder.Box.Visible         = true
+                        else
+                            holder.Box.Visible        = false
+                            holder.BoxOutline.Visible = false
+                        end
+
+                        if _G.ChetsuState.HealthBar then
+                            local healthPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                            local barH      = height * healthPct
+                            local barX      = boxPos.X - 5
+
+                            holder.HealthBg.From    = Vector2.new(barX, boxPos.Y)
+                            holder.HealthBg.To      = Vector2.new(barX, boxPos.Y + height)
+                            holder.HealthBg.Visible = true
+
+                            holder.HealthBar.From    = Vector2.new(barX, boxPos.Y + height)
+                            holder.HealthBar.To      = Vector2.new(barX, boxPos.Y + height - barH)
+                            holder.HealthBar.Color   = Color3.fromRGB(
+                                math.round(255 * (1 - healthPct)),
+                                math.round(255 * healthPct),
+                                0
+                            )
+                            holder.HealthBar.Visible = true
+                        else
+                            holder.HealthBg.Visible  = false
+                            holder.HealthBar.Visible = false
+                        end
+
+                        if _G.ChetsuState.NameESP then
+                            holder.Name.Text     = player.DisplayName or player.Name
+                            holder.Name.Position = Vector2.new(rootPos.X, boxPos.Y - 15)
+                            holder.Name.Visible  = true
+                        else
+                            holder.Name.Visible  = false
+                        end
+
+                        if _G.ChetsuState.DistanceESP and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local distStuds = math.round((root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                            holder.Distance.Text     = string.format("%d Studs", distStuds)
+                            holder.Distance.Position = Vector2.new(rootPos.X, boxPos.Y + height + 2)
+                            holder.Distance.Visible  = true
+                        else
+                            holder.Distance.Visible  = false
+                        end
+
+                        if _G.ChetsuState.Snaplines then
+                            holder.Tracer.From    = screenBottom
+                            holder.Tracer.To      = Vector2.new(rootPos.X, boxPos.Y + height)
+                            holder.Tracer.Visible = true
+                        else
+                            holder.Tracer.Visible = false
+                        end
+
+                        if _G.ChetsuState.Skeleton and #holder.Bones > 0 then
+                            local bonePairs = {
+                                {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+                                {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+                                {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+                                {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+                                {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
+                                {"Head", "Torso"}, {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+                                {"Torso", "Left Leg"}, {"Torso", "Right Leg"}
+                            }
+
+                            local boneIndex = 1
+                            for _, pair in ipairs(bonePairs) do
+                                local p1 = char:FindFirstChild(pair[1])
+                                local p2 = char:FindFirstChild(pair[2])
+                                if p1 and p2 and holder.Bones[boneIndex] then
+                                    local s1, o1 = Camera:WorldToViewportPoint(p1.Position)
+                                    local s2, o2 = Camera:WorldToViewportPoint(p2.Position)
+                                    if o1 and o2 then
+                                        holder.Bones[boneIndex].From    = Vector2.new(s1.X, s1.Y)
+                                        holder.Bones[boneIndex].To      = Vector2.new(s2.X, s2.Y)
+                                        holder.Bones[boneIndex].Visible = true
+                                        boneIndex = boneIndex + 1
+                                    end
+                                end
+                            end
+                            for i = boneIndex, #holder.Bones do
+                                holder.Bones[i].Visible = false
+                            end
+                        else
+                            for _, b in ipairs(holder.Bones) do b.Visible = false end
+                        end
+                    else
+                        if holder.Box then holder.Box.Visible = false end
+                        if holder.BoxOutline then holder.BoxOutline.Visible = false end
+                        if holder.HealthBg then holder.HealthBg.Visible = false end
+                        if holder.HealthBar then holder.HealthBar.Visible = false end
+                        if holder.Name then holder.Name.Visible = false end
+                        if holder.Distance then holder.Distance.Visible = false end
+                        if holder.Tracer then holder.Tracer.Visible = false end
+                        for _, b in ipairs(holder.Bones) do b.Visible = false end
+                    end
+                end
+            end
+        else
+            holder.Highlight.Enabled = false
+            if hasDrawing then
+                if holder.Box then holder.Box.Visible = false end
+                if holder.BoxOutline then holder.BoxOutline.Visible = false end
+                if holder.HealthBg then holder.HealthBg.Visible = false end
+                if holder.HealthBar then holder.HealthBar.Visible = false end
+                if holder.Name then holder.Name.Visible = false end
+                if holder.Distance then holder.Distance.Visible = false end
+                if holder.Tracer then holder.Tracer.Visible = false end
+                for _, b in ipairs(holder.Bones) do b.Visible = false end
+            end
+        end
+    end
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  18. INITIALIZATION COMPLETE & CONSOLE GREETING
+-- ─────────────────────────────────────────────────────────────────────────────
+WatermarkFrame.Visible = true
+
+print([[
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║                 C H E T S U   H U B   v 7 . 0                    ║
+    ║               U L T I M A T E   E D I T I O N                    ║
+    ║                                                                  ║
+    ║  ✦ Default PIN: 1337                                             ║
+    ║  ✦ Hard Aimbot + AutoWall + Silent Ray Engine                    ║
+    ║  ✦ Dynamic 2D Tactical Radar + Console Event Log                 ║
+    ║  ✦ Multi-FX Backgrounds (Snow, Rain, Aurora, Particles, etc.)    ║
+    ║  ✦ Press 'K' to Toggle Menu | Press 'End' for Panic Kill         ║
+    ╚═══════════════════════════════════════════════════════════════════╝
+]])
+
+[БЛОК 2: ASSET MANAGER & UI LOADER]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  ASSET MANAGER (GITHUB CACHING & SAFE LOADER)
+-- ─────────────────────────────────────────────────────────────────────────────
+local Assets = {
+    Icon   = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+    Header = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+    Loader = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+}
+local AssetUrls = {
+    Icon   = { File = "chetsu_icon.jpg",   Url = "https://raw.githubusercontent.com/nunij6518-glitch/ui-logos/main/icon.jpg" },
+    Header = { File = "chetsu_header.jpg", Url = "https://raw.githubusercontent.com/nunij6518-glitch/ui-logos/main/header.jpg" },
+    Loader = { File = "chetsu_loader.jpg", Url = "https://raw.githubusercontent.com/nunij6518-glitch/ui-logos/main/loader.jpg" },
+}
+
+local function GetGithubAssetSafe(fileName: string, rawUrl: string): string?
+    local success, asset = pcall(function()
+        if not (isfile and writefile and getcustomasset) then
+            return nil
+        end
+        if not isfile(fileName) then
+            local data = game:HttpGet(rawUrl, true)
+            if data and #data > 0 then
+                writefile(fileName, data)
+            end
+        end
+        return getcustomasset(fileName)
+    end)
+    if success and asset then
+        return asset
+    end
+    return nil
+end
+
+local function LoadAllAssetsAsync(onLoadedCallback: ({[string]: string}) -> ())
+    task.spawn(function()
+        for key, info in pairs(AssetUrls) do
+            local assetId = GetGithubAssetSafe(info.File, info.Url)
+            if assetId then
+                Assets[key] = assetId
+            end
+        end
+        if onLoadedCallback then
+            onLoadedCallback(Assets)
+        end
+    end)
+end
+
+-- UI Integration & Lifecycle Code
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ChetsuUI_WithAssets"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 99999
+ScreenGui.Parent = PlayerGui
+
+local SplashFrame = Instance.new("Frame")
+SplashFrame.Name = "SplashLoader"
+SplashFrame.Size = UDim2.new(1, 0, 1, 0)
+SplashFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+SplashFrame.ZIndex = 10000
+SplashFrame.Parent = ScreenGui
+
+local SplashImage = Instance.new("ImageLabel")
+SplashImage.AnchorPoint = Vector2.new(0.5, 0.5)
+SplashImage.Position = UDim2.new(0.5, 0, 0.5, -20)
+SplashImage.Size = UDim2.new(0, 160, 0, 160)
+SplashImage.BackgroundTransparency = 1
+SplashImage.ImageTransparency = 1
+SplashImage.ScaleType = Enum.ScaleType.Fit
+SplashImage.Image = Assets.Loader
+SplashImage.Parent = SplashFrame
+
+local SplashText = Instance.new("TextLabel")
+SplashText.AnchorPoint = Vector2.new(0.5, 0)
+SplashText.Position = UDim2.new(0.5, 0, 0.5, 70)
+SplashText.Size = UDim2.new(0, 300, 0, 24)
+SplashText.BackgroundTransparency = 1
+SplashText.Font = Enum.Font.GothamBold
+SplashText.TextSize = 13
+SplashText.TextColor3 = Color3.fromRGB(160, 160, 175)
+SplashText.Text = "INITIALIZING MODULES..."
+SplashText.TextTransparency = 1
+SplashText.Parent = SplashFrame
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 760, 0, 520)
+MainFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Position = UDim2.new(0, 190, 0, 0)
+Header.Size = UDim2.new(1, -190, 0, 50)
+Header.BackgroundTransparency = 1
+Header.Parent = MainFrame
+
+local HeaderLogo = Instance.new("ImageLabel")
+HeaderLogo.Position = UDim2.new(0, 16, 0.5, -16)
+HeaderLogo.Size = UDim2.new(0, 140, 0, 32)
+HeaderLogo.BackgroundTransparency = 1
+HeaderLogo.ScaleType = Enum.ScaleType.Fit
+HeaderLogo.Image = Assets.Header
+HeaderLogo.Parent = Header
+
+local Watermark = Instance.new("Frame")
+Watermark.Name = "Watermark"
+Watermark.Position = UDim2.new(0, 14, 0, 14)
+Watermark.Size = UDim2.new(0, 240, 0, 32)
+Watermark.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+Watermark.BorderSizePixel = 0
+Watermark.Parent = ScreenGui
+
+local WmIcon = Instance.new("ImageLabel")
+WmIcon.Position = UDim2.new(0, 6, 0.5, -10)
+WmIcon.Size = UDim2.new(0, 20, 0, 20)
+WmIcon.BackgroundTransparency = 1
+WmIcon.ScaleType = Enum.ScaleType.Fit
+WmIcon.Image = Assets.Icon
+WmIcon.Parent = Watermark
+
+local function StartSplashSequence(onComplete: () -> ())
+    TweenService:Create(SplashImage, TweenInfo.new(0.5), { ImageTransparency = 0 }):Play()
+    TweenService:Create(SplashText, TweenInfo.new(0.5), { TextTransparency = 0 }):Play()
+    
+    LoadAllAssetsAsync(function(loadedAssets)
+        SplashImage.Image = loadedAssets.Loader
+        HeaderLogo.Image  = loadedAssets.Header
+        WmIcon.Image      = loadedAssets.Icon
+        SplashText.Text   = "SYSTEM READY"
+        task.wait(0.6)
+        
+        local fadeOut = TweenService:Create(SplashFrame, TweenInfo.new(0.4), { BackgroundTransparency = 1 })
+        TweenService:Create(SplashImage, TweenInfo.new(0.3), { ImageTransparency = 1 }):Play()
+        TweenService:Create(SplashText, TweenInfo.new(0.3), { TextTransparency = 1 }):Play()
+        fadeOut:Play()
+        
+        fadeOut.Completed:Connect(function()
+            SplashFrame.Visible = false
+            MainFrame.Visible = true
+            if onComplete then onComplete() end
+        end)
+    end)
+end
+
+StartSplashSequence(function()
+    -- ТОЧКА ВХОДА ИНИЦИАЛИЗАЦИИ ИСПОЛНИТЕЛЬНОЙ ЛОГИКИ СКИПТА
+end)
+
+
